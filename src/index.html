@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Online Code Platform</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-size: 16px;
+    }
+
+    header {
+      padding: 20px 40px;
+      border-bottom: 1px solid grey;
+    }
+
+    .content-width {
+      max-width: 768px;
+      margin: 0 auto;
+    }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    section {
+      padding: 30px 50px;
+    }
+
+    .original-poster {
+      padding: 20px 30px;
+      border-bottom: 1px solid grey;
+    }
+
+    .code-editor {
+      border: 1px solid grey;
+      border-radius: 3px;
+    }
+
+    .code-editor__header {
+      border-bottom: 1px solid grey;
+      padding: 10px 20px;
+    }
+
+    .comment {
+      margin-top: 30px;
+    }
+
+    .comment__body {
+      outline: 0;
+      min-width: 100%;
+      box-sizing: border-box;
+      border-radius: 3px;
+      border: none;
+      border-bottom: 1px solid grey;
+      background: #f0f0f0;
+      padding: 10px 20px;
+      height: 100px;
+    }
+
+    .people-answers {
+      margin-top: 20px;
+      padding: 30px;
+      border: 1px solid grey;
+    }
+  </style>
+  <header>
+    <div class="nav-bar">
+      <div class="nav-bar__logo">
+        Snipet Coder
+      </div>
+
+      <div>
+        <input />
+      </div>
+
+      <nav>
+        <a>Playground</a>
+        <a>Snipet</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="original-poster">
+        <div class="code-editor">
+          <div class="code-editor__header">
+            <select name="language">
+              <option value="js">JavaScript</option>
+              <option value="java">Java</option>
+              <option value="c">C</option>
+              <option value="go">Go</option>
+              <option value="cpp">C++</option>
+              <option value="php">PHP</option>
+              <option value="python">Python</option>
+              <option value="html">HTML</option>
+              <option value="sql">SQL</option>
+            </select>
+          </div>
+
+          <div class="code-editor__body">
+          </div>
+        </div>
+
+        <div class="comment">
+          <textarea class="comment__body">
+          </textarea>
+        </div>
+      </div>
+
+      <div class="people-answers">
+      </div>
+    </section>
+  </main>
+
+  <footer>
+  </footer>
+</body>
+
+<script type="module" src="app.js">
+</script>
+
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "300.online_code_platform",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --emptyOutDir"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^5.2.11"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.16.0",
+    "@codemirror/commands": "^6.5.0",
+    "@codemirror/lang-cpp": "^6.0.2",
+    "@codemirror/lang-go": "^6.0.0",
+    "@codemirror/lang-html": "^6.4.9",
+    "@codemirror/lang-java": "^6.0.1",
+    "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/lang-php": "^6.0.1",
+    "@codemirror/lang-python": "^6.1.6",
+    "@codemirror/lang-sql": "^6.6.4",
+    "@codemirror/language": "^6.10.1",
+    "@codemirror/search": "^6.5.6",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.26.3",
+    "codemirror": "^6.0.1"
+  }
+}
