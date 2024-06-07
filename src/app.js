@@ -5,10 +5,10 @@ import { syntaxHighlighting, indentOnInput, defaultHighlightStyle, bracketMatchi
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { highlightSelectionMatches } from '@codemirror/search'
 import { defaultKeymap, indentWithTab } from '@codemirror/commands'
-import { javascript } from '@codemirror/lang-javascript'
 
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
+import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
 import { go } from '@codemirror/lang-go'
 import { java } from '@codemirror/lang-java'
@@ -68,19 +68,18 @@ function createEditorView(editorCanvas, startState) {
   return view
 }
 
-//
-// First, hook the language selection dropdown to code editor 
-//
-let codeEditorWrapper = document.getElementsByClassName("code-editor")[0]
-let codeEditorElement = codeEditorWrapper.getElementsByClassName("code-editor__body")[0]
-let codeEditorLanguageElement = codeEditorWrapper.querySelector(".code-editor__header > select")
-let defaultLanguageExtension = () => [javascript()]
+function selectLanguageFromDOM(el) {
+  let languageExtension = getLanguageExtensionFromLabel(el.value)
 
-console.log(`${codeEditorLanguageElement}`)
-codeEditorLanguageElement.addEventListener("change", (el) => {
-  let languageExtension
+  console.log(`[Info] [setLanguageToCodeEditor] languageExtension = `, languageExtension)
 
-  switch (el.target.value) {
+  return languageExtension
+}
+
+function getLanguageExtensionFromLabel(languageLabel) {
+  let languageExtension = null
+
+  switch (languageLabel) {
     case "js":
       languageExtension = javascript
       break
@@ -107,11 +106,170 @@ codeEditorLanguageElement.addEventListener("change", (el) => {
       break;
   }
 
-  startState = createEditorState(view.state.doc, languageExtension)
-  view = createEditorView(codeEditorElement, startState)
-})
+  return languageExtension
+}
 
-let startState = createEditorState(null, defaultLanguageExtension)
-let view = createEditorView(codeEditorElement, startState)
+function setLanguageToCodeEditor(codeEditorElement, views, postID, languageExtension) {
 
-console.log(`${startState.doc}`)
+  if (!codeEditorElement) {
+    console.log("[Error] Unable to set language related to a Code Editor since codeEditorElement = null")
+    return
+  }
+
+  let previousView = views[postID]
+
+  let startState = createEditorState(previousView.state.doc, languageExtension)
+  let view = createEditorView(codeEditorElement, startState)
+
+  views[postID] = view
+}
+
+function getPostElement(postID) {
+  return document.getElementById(`user-post__${postID}`)
+}
+
+function generateRawPostOnDOM(post, views) {
+  let postID = post.PostId
+
+  let postHtmlElement = document.getElementById(`user-post__${postID}`)
+  if (!postHtmlElement) {
+    console.log("[Warning - generateRawPostOnDOM()] postHtmlElement == null, abording Code Editor binding ...")
+    return views
+  }
+
+  let codeEditorElement = postHtmlElement.getElementsByClassName("code-editor__body")[0]
+  let codeEditorLanguageElement = postHtmlElement.querySelector(".code-editor__header > select")
+
+  if (!codeEditorElement || !codeEditorLanguageElement) {
+    console.log("[Warning - generateRawPostOnDOM()] codeEditor(Language)Element == null, abording Code Editor binding ...")
+    return views
+  }
+
+  let posterCode = post.CodeSnipet
+
+  let startState = createEditorState(posterCode, null)
+  let view = createEditorView(codeEditorElement, startState)
+
+  views[postID] = view
+
+  let languageLabel = post.LanguageLabel
+  if (languageLabel == "")
+    languageLabel = "js"
+
+  let languageExtension = getLanguageExtensionFromLabel(languageLabel)
+  setLanguageToCodeEditor(codeEditorElement, views, postID, languageExtension)
+
+  codeEditorLanguageElement.value = languageLabel
+  codeEditorLanguageElement.addEventListener("change", function(el) {
+    let postID = el.target.dataset.idPost
+
+    let languageExtension = selectLanguageFromDOM(el.target)
+    let codeEditorElement = getPostElement(postID).getElementsByClassName("code-editor__body")[0]
+
+    setLanguageToCodeEditor(codeEditorElement, views, postID, languageExtension)
+  })
+
+  return views
+}
+
+function generateOriginalPostOnDOM(post, views) {
+
+  if (!post) {
+    console.log("[Error] No Original Post Found !")
+    return null
+  }
+
+  if (!views) {
+    console.log("[Warning] Global Code Editor 'VIEWS' is null")
+    views = {}
+  }
+
+  views = generateRawPostOnDOM(post, views)
+
+  console.log("[Info] Found Original Post :")
+  // console.log(postHtmlElement)
+
+  return views
+}
+
+function generateAnswerPostOnDOM(posts, views) {
+
+  if (!posts) {
+    console.log("[Warning] No Answer Posts Found !")
+    return null
+  }
+
+  if (!views) {
+    console.log("[Warning] Global Code Editor 'VIEWS' is null")
+    views = {}
+  }
+
+  for (let i = 0; i < posts.length; i++) {
+    views = generateRawPostOnDOM(posts[i], views)
+
+    console.log("[Info] Found a post :")
+    // console.log(postHtmlElement)
+  }
+
+  return views
+}
+
+
+function conditionalInitialization(flags, views) {
+  function registerHookForPostCreation(views) {
+    let hiddenCodeInput = document.querySelector("section > form > input[name=code]")
+    let codeEditorLanguageElement = document.querySelector("section > form .code-editor__header > select")
+    let form = document.querySelector("body > main > section > form")
+
+    if (!form) {
+      console.log("[Error] Unable to find a field that a user could fill !")
+      console.log("[Info] User wont be able to send/create new Code Snipet Post !!")
+
+      return
+    }
+
+    if (!codeEditorLanguageElement) {
+      console.log("[Error] Unable to find language selector for code editor")
+      console.log("[Info] User wont be able to send/create new Code Snipet Post !!")
+
+      return
+    }
+
+    if (!hiddenCodeInput) {
+      console.log("[Error] Unable to find the PostID through the hidden data field !")
+      console.log("[Info] User wont be able to send/create new Code Snipet Post !!")
+
+      return
+    }
+
+    let defaultPostID = codeEditorLanguageElement.dataset.idPost
+    if (defaultPostID > 0)
+      console.log("[Warning] Default PostID must be 0 or lesser for a post that has yet to be created in the DB. Current PostID = ", defaultPostID)
+
+
+    form.addEventListener("submit", function(_) {
+      let codeContent = views[defaultPostID].state.doc
+      hiddenCodeInput.value = codeContent
+    })
+
+  }
+
+  if (flags.isCreatePostPage) {
+    registerHookForPostCreation(views)
+  }
+}
+
+//
+// Init
+//
+
+let VIEWS = {}
+
+VIEWS = generateOriginalPostOnDOM(GLOBAL_DATA_ORIGINAL_POSTER, VIEWS)
+VIEWS = generateAnswerPostOnDOM(GLOBAL_DATA_ANSWERS_POSTER, VIEWS)
+
+GLOBAL_VIEWS = VIEWS
+
+const FLAGS = GLOBAL_FLAGS
+conditionalInitialization(FLAGS, VIEWS)
+

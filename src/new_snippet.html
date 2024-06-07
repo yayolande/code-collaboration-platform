@@ -20,19 +20,13 @@
 
       {{ template "user-post" .OriginalPost }}
 
-      <a href="new">Create New Post !</a>
-      <div class="people-answers">
-        {{- range .AnswersPost }}
-        {{ template "user-post" . }}
-        {{- end }}
-      </div>
     </section>
   </main>
 
   {{ template "footer" . }}
 </body>
 
-{{ template "global_var_js" . }};
+{{ template "global_var_js" . }}
 
 <script>
   /*
