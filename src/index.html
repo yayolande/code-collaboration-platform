@@ -10,6 +10,9 @@
 <body>
   <style>
   </style>
+  {{- $originalPost := .OriginalPost -}}
+  {{- $answersPost := .AnswersPost -}}
+  {{- $codeLanguages := .CodeLanguages -}}
 
   {{ template "style" }}
 
@@ -17,22 +20,32 @@
 
   <main>
     <section>
+      {{ printf "%#v" . }}
 
-      {{ template "user-post" .OriginalPost }}
+      {{- $post := dict "Post" $originalPost "Lang" $codeLanguages -}}
+      {{ template "user-post" $post }}
 
       <a href="new">Create New Post !</a>
       <div class="people-answers">
-        {{- range .AnswersPost }}
-        {{ template "user-post" . }}
+        {{- range $answersPost }}
+
+        {{- $post = dict "Post" . "Lang" $codeLanguages -}}
+        {{ template "user-post" $post }}
+
         {{- end }}
       </div>
+      <dib class="new-answer">
+        This is not working !!!!!
+        {{- $post := dict "Post" "" "Lang" "" -}}
+        {{ template "user-post" $post }}
+      </dib>
     </section>
   </main>
 
   {{ template "footer" . }}
 </body>
 
-{{ template "global_var_js" . }};
+{{ template "global_var_js" . }}
 
 <script>
   /*

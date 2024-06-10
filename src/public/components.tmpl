@@ -24,34 +24,30 @@
 {{ end }}
 
 {{ define "user-post" }}
-<div id="user-post__{{ .PostId }}" class="original-poster">
-  <div class="code-editor">
-    <div class="code-editor__header">
-      <select name="language" data-id-post="{{ .PostId }}">
-        <option value="js">JavaScript</option>
-        <option value="java">Java</option>
-        <option value="c">C</option>
-        <option value="go">Go</option>
-        <option value="cpp">C++</option>
-        <option value="php">PHP</option>
-        <option value="python">Python</option>
-        <option value="html">HTML</option>
-        <option value="sql">SQL</option>
-      </select>
+  {{ with .Post }}
+  <div id="user-post__{{ .PostId }}" class="original-poster">
+    <div class="code-editor">
+      <div class="code-editor__header">
+        <select name="language" data-id-post="{{ .PostId }}">
+        {{- range $.Lang }}
+          <option value="{{ .Code }}">{{ .Label }}</option>
+        {{- end }}
+        </select>
+      </div>
+
+      <div class="code-editor__body">
+      </div>
     </div>
 
-    <div class="code-editor__body">
+    <div class="comment">
+      {{/* . */}}
+      <textarea name="comment" class="comment__body">
+        {{ .Comment }}
+        {{ .Username }}
+      </textarea>
     </div>
   </div>
-
-  <div class="comment">
-    {{/* . */}}
-    <textarea name="comment" class="comment__body">
-      {{ .Comment }}
-      {{ .Username }}
-    </textarea>
-  </div>
-</div>
+  {{ end }}
 {{ end }}
 
 

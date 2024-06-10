@@ -19,7 +19,8 @@
     <section>
 
       <form action="new/save" method="post">
-        {{ template "user-post" .OriginalPost }}
+        {{- $post := dict "Post" .OriginalPost "Lang" .CodeLanguages -}}
+        {{ template "user-post" $post }}
         <p>Form here</p>
         <input name="username" value="my name is steven" />
         <input name="password" value="halohalowa" />

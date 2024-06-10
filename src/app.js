@@ -23,8 +23,18 @@ function createEditorState(codeContent, languageExtension) {
   }
 
   if (!codeContent) {
-    codeContent = "// Hello World !\n console.log('Melissa')"
+    codeContent = ""
   }
+
+  /*
+  codeContent = codeContent.toString().split(",")
+  let str = ""
+  codeContent.forEach((el) => {
+    str += el + "\n"
+  })
+  */
+
+  codeContent = codeContent.toString().replaceAll(",", "\n")
 
   let startState = EditorState.create({
     doc: codeContent,
@@ -152,9 +162,12 @@ function generateRawPostOnDOM(post, views) {
 
   views[postID] = view
 
-  let languageLabel = post.LanguageLabel
-  if (languageLabel == "")
+  let languageLabel = post.LanguageCode
+  if (!languageLabel) {
     languageLabel = "js"
+
+    console.log("[Error] Language for code editor was empty ! Value set to default : ", languageLabel)
+  }
 
   let languageExtension = getLanguageExtensionFromLabel(languageLabel)
   setLanguageToCodeEditor(codeEditorElement, views, postID, languageExtension)
@@ -247,9 +260,29 @@ function conditionalInitialization(flags, views) {
       console.log("[Warning] Default PostID must be 0 or lesser for a post that has yet to be created in the DB. Current PostID = ", defaultPostID)
 
 
-    form.addEventListener("submit", function(_) {
+    form.addEventListener("submit", function(e) {
       let codeContent = views[defaultPostID].state.doc
       hiddenCodeInput.value = codeContent
+
+      // WARNING: This code below is only for debuging purpose
+      // console.log("codeContent: ", codeContent)
+
+      let codeContentFormated = ""
+
+      /*
+      codeContent.text.forEach((el) => {
+        codeContentFormated += el + "\n"
+      })
+      */
+
+      // console.log("codeContentFormated: ", codeContentFormated)
+      // e.preventDefault()
+
+      codeContentFormated = codeContent.text.toString()
+      hiddenCodeInput.value = codeContentFormated
+
+      // console.log("codeContentFormated: ", codeContentFormated)
+      // e.preventDefault()
     })
 
   }
