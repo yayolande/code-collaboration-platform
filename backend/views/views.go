@@ -16,7 +16,7 @@ func init() {
 }
 
 type Post struct {
-	PostId       int
+	PostID       int
 	Username     string
 	CodeSnipet   string
 	LanguageCode string
@@ -25,6 +25,7 @@ type Post struct {
 }
 
 type PostTree struct {
+	EmptyPost     Post
 	OriginalPost  Post
 	AnswersPost   []Post
 	CodeLanguages []storage.CodingLanguage
@@ -36,7 +37,7 @@ func (p *Post) New(row database.GetPostsFromRootRow) {
 	//
 	lang, _ := storage.GetLanguageDetailsFromID(int(row.LanguageID))
 
-	p.PostId = int(row.PostID)
+	p.PostID = int(row.PostID)
 	p.Username = "PLACEHOLDER_NAME"
 	p.CodeSnipet = row.Code
 	p.LanguageCode = lang.Code
