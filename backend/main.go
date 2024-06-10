@@ -8,15 +8,15 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"online_code_platform_server/sqlc/database"
-	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/mattn/go-sqlite3"
+	"online_code_platform_server/sqlc/database"
 	"online_code_platform_server/storage"
 	"online_code_platform_server/views"
 )
@@ -78,10 +78,7 @@ func setupDatabase() (*database.Queries, *context.Context) {
 func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.Context) {
 
 	router.Get("/assets/*", func(w http.ResponseWriter, req *http.Request) {
-		path, _ := os.Getwd()
-		path = filepath.Join(path, "..", "dist/")
-
-		path = views.PathStaticFiles
+		path := views.PathStaticFiles
 		fs := http.FileServer(http.Dir(path))
 
 		fs.ServeHTTP(w, req)
@@ -112,21 +109,11 @@ func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.C
 
 			langs := storage.CodeLanguages
 
-			orginalPost := views.Post{
-				PostId:       0,
-				LanguageCode: langs[0].Code,
-			}
-
-			answersPost := []views.Post{}
-
-			posts := struct {
-				OriginalPost  views.Post
-				AnswersPost   []views.Post
-				CodeLanguages [len(langs)]storage.CodingLanguage
-			}{
-				OriginalPost:  orginalPost,
-				AnswersPost:   answersPost,
-				CodeLanguages: langs,
+			posts := views.PostTree{
+				EmptyPost:     views.Post{},
+				OriginalPost:  views.Post{},
+				AnswersPost:   []views.Post{},
+				CodeLanguages: langs[:],
 			}
 
 			err = tmpl.Execute(w, posts)
@@ -145,7 +132,6 @@ func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.C
 			log.Printf("%#v \n\n", req.Form)
 
 			var formLangCode string = req.FormValue("language")
-
 			lang, _ := storage.GetLanguageDetailsFromCode(formLangCode)
 
 			// TODO: User need proper DB table
@@ -160,7 +146,43 @@ func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.C
 				PostDate:   time.Now().String(),
 			}
 
-			post, err := queries.AddPost(*dbContext, input)
+			if strings.Trim(input.Code, " \n") == "" {
+				message := "[" + req.URL.Path + "] "
+				message += "Cannot save 'Post' with empty 'Code Snippet' !"
+				log.Println(message)
+
+				http.Error(w, message, http.StatusInternalServerError)
+				return
+			}
+
+			parentPostID, err := strconv.Atoi(req.FormValue("parent_post_id"))
+			if err != nil {
+				message := "[" + req.URL.Path + "] "
+				message += "Unable to parse 'parent post id' to integer -- " + err.Error()
+				log.Println(message)
+
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if parentPostID == 0 {
+				parentPostID = -1 // Db only understand this for parentless posts
+			}
+
+			tx, err := DB.Begin()
+			if err != nil {
+				message := "[" + req.URL.Path + "] "
+				message += "Transaction failed to start -- " + err.Error()
+				log.Println(message)
+
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			defer tx.Rollback()
+			transaction := queries.WithTx(tx)
+
+			post, err := transaction.AddPost(*dbContext, input)
 
 			if err != nil {
 				message := "[" + req.URL.Path + "] "
@@ -173,10 +195,10 @@ func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.C
 
 			postTree := database.AddPostIntoTreeParams{
 				PostID:       post.PostID,
-				ParentPostID: -1,
+				ParentPostID: int64(parentPostID),
 			}
 
-			_, err = queries.AddPostIntoTree(*dbContext, postTree)
+			_, err = transaction.AddPostIntoTree(*dbContext, postTree)
 			if err != nil {
 				message := "[" + req.URL.Path + "] "
 				message += "Error while Inserting PostTree into DB -- " + err.Error()
@@ -186,8 +208,10 @@ func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.C
 				return
 			}
 
-			nextUrl := fmt.Sprintf("../%d", post.PostID)
+			tx.Commit()
 
+			// nextUrl := fmt.Sprintf("../%d", post.PostID)
+			nextUrl := fmt.Sprintf("../%d", parentPostID)
 			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 		})
 
@@ -247,16 +271,6 @@ func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.C
 				return
 			}
 
-			if len(posts) == 0 {
-				// TODO: Show something if there is no posts available for a particular postID
-				message := "[" + req.URL.Path + "] "
-				message += "No Post Found"
-				log.Println(message)
-
-				w.Write([]byte("Page Not Found"))
-				return
-			}
-
 			postsConverted := []views.Post{}
 
 			for _, post := range posts {
@@ -270,16 +284,15 @@ func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.C
 			answersPost := []views.Post{}
 
 			if len(postsConverted) <= 0 {
-				// TODO: Show something if there is no posts available for a particular postID
 				message := "[" + req.URL.Path + "] "
 				message += "No Post Found"
 				log.Println(message)
 
 				w.Write([]byte("Page Not Found"))
 				return
-			} else if len(postsConverted) > 0 {
-				orginalPost = postsConverted[0]
 			}
+
+			orginalPost = postsConverted[0]
 
 			if len(postsConverted) > 1 {
 				answersPost = postsConverted[1:]
@@ -288,6 +301,7 @@ func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.C
 			langs := storage.CodeLanguages
 
 			postsFormated := views.PostTree{
+				EmptyPost:     views.Post{},
 				OriginalPost:  orginalPost,
 				AnswersPost:   answersPost,
 				CodeLanguages: langs[:],
