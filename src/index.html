@@ -20,8 +20,6 @@
 
   <main>
     <section>
-      {{ printf "%#v" . }}
-
       {{- $post := dict "Post" $originalPost "Lang" $codeLanguages -}}
       {{ template "user-post" $post }}
 
@@ -35,9 +33,8 @@
         {{- end }}
       </div>
       <dib class="new-answer">
-        This is not working !!!!!
-        {{- $post := dict "Post" "" "Lang" "" -}}
-        {{ template "user-post" $post }}
+        <strong>New answer:</strong>
+        {{ template "user-post-form" . }}
       </dib>
     </section>
   </main>
@@ -48,12 +45,7 @@
 {{ template "global_var_js" . }}
 
 <script>
-  /*
-  var GLOBAL_DATA_ORIGINAL_POSTER = {{.OriginalPost}};
-  var GLOBAL_DATA_ANSWERS_POSTER = {{.AnswersPost}};
-  var GLOBAL_VIEWS = {}
-  var GLOBAL_FLAGS = {}
-  */
+  GLOBAL_FLAGS.isCreatePostElement = true
 </script>
 
 <script type="module" src="app.js">

@@ -17,16 +17,7 @@
 
   <main>
     <section>
-
-      <form action="new/save" method="post">
-        {{- $post := dict "Post" .OriginalPost "Lang" .CodeLanguages -}}
-        {{ template "user-post" $post }}
-        <p>Form here</p>
-        <input name="username" value="my name is steven" />
-        <input name="password" value="halohalowa" />
-        <input name="code" value="{{ .OriginalPost.PostId }}" hidden />
-        <input type="submit" value="Submission Button" />
-      </form>
+      {{ template "user-post-form" . }}
 
       Yeah vite + rollup build watch is working properly !!!
 
@@ -50,17 +41,7 @@
 {{ template "global_var_js" . }}
 
 <script>
-  GLOBAL_FLAGS.isCreatePostPage = true
-
-  /*
-  var GLOBAL_DATA_ORIGINAL_POSTER = {{.OriginalPost}};
-  var GLOBAL_DATA_ANSWERS_POSTER = {{.AnswersPost}};
-  var GLOBAL_VIEWS = {}
-  var GLOBAL_FLAGS = {
-    isCreatePostPage: true,
-  }
-  */
-
+  GLOBAL_FLAGS.isCreatePostElement = true
 </script>
 
 <script type="module" src="../app.js">

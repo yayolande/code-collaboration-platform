@@ -26,14 +26,6 @@ function createEditorState(codeContent, languageExtension) {
     codeContent = ""
   }
 
-  /*
-  codeContent = codeContent.toString().split(",")
-  let str = ""
-  codeContent.forEach((el) => {
-    str += el + "\n"
-  })
-  */
-
   codeContent = codeContent.toString().replaceAll(",", "\n")
 
   let startState = EditorState.create({
@@ -138,10 +130,24 @@ function getPostElement(postID) {
   return document.getElementById(`user-post__${postID}`)
 }
 
-function generateRawPostOnDOM(post, views) {
-  let postID = post.PostId
+function getCreationPostID() {
+  let defaultPostID = 0
+  let post = GLOBAL_DATA_EMPTY_POSTER
 
-  let postHtmlElement = document.getElementById(`user-post__${postID}`)
+  if (!post) {
+    console.log("[Warning] No Data for empty 'Post' found")
+    console.log("[Info] Post Creation may not work as expected !")
+
+    return defaultPostID
+  }
+
+  return post.PostID
+}
+
+function generateRawPostOnDOM(post, views) {
+  let postID = post.PostID
+
+  let postHtmlElement = getPostElement(postID)
   if (!postHtmlElement) {
     console.log("[Warning - generateRawPostOnDOM()] postHtmlElement == null, abording Code Editor binding ...")
     return views
@@ -166,7 +172,7 @@ function generateRawPostOnDOM(post, views) {
   if (!languageLabel) {
     languageLabel = "js"
 
-    console.log("[Error] Language for code editor was empty ! Value set to default : ", languageLabel)
+    console.log("[Warning] Language for code editor was empty ! Value set to default : ", languageLabel)
   }
 
   let languageExtension = getLanguageExtensionFromLabel(languageLabel)
@@ -189,7 +195,7 @@ function generateOriginalPostOnDOM(post, views) {
 
   if (!post) {
     console.log("[Error] No Original Post Found !")
-    return null
+    return views
   }
 
   if (!views) {
@@ -198,9 +204,7 @@ function generateOriginalPostOnDOM(post, views) {
   }
 
   views = generateRawPostOnDOM(post, views)
-
   console.log("[Info] Found Original Post :")
-  // console.log(postHtmlElement)
 
   return views
 }
@@ -209,7 +213,7 @@ function generateAnswerPostOnDOM(posts, views) {
 
   if (!posts) {
     console.log("[Warning] No Answer Posts Found !")
-    return null
+    return views
   }
 
   if (!views) {
@@ -219,27 +223,55 @@ function generateAnswerPostOnDOM(posts, views) {
 
   for (let i = 0; i < posts.length; i++) {
     views = generateRawPostOnDOM(posts[i], views)
-
     console.log("[Info] Found a post :")
-    // console.log(postHtmlElement)
   }
 
   return views
 }
 
+function generateEmptyPostOnDom(post, views) {
+
+  if (!post) {
+    console.log("[Warning] No Creation Post found !")
+    return views
+  }
+
+  if (!views) {
+    console.log("[Warning] Global Code Editor 'VIEWS' is null")
+    views = {}
+  }
+
+  views = generateRawPostOnDOM(post, views)
+
+  return views
+}
 
 function conditionalInitialization(flags, views) {
-  function registerHookForPostCreation(views) {
-    let hiddenCodeInput = document.querySelector("section > form > input[name=code]")
-    let codeEditorLanguageElement = document.querySelector("section > form .code-editor__header > select")
-    let form = document.querySelector("body > main > section > form")
+  function registerHookForPostCreation(views, postID) {
 
+    let postHtmlElement = getPostElement(postID)
+    if (!postHtmlElement) {
+      console.log("[Error] Unable to find 'Post' element that allow creating new post on page")
+
+      return
+    }
+
+    let form = postHtmlElement.parentElement
     if (!form) {
-      console.log("[Error] Unable to find a field that a user could fill !")
+      console.log("[Error] No Parent element found for 'User Post' !")
       console.log("[Info] User wont be able to send/create new Code Snipet Post !!")
 
       return
     }
+
+    if (form.nodeName != "FORM") {
+      console.log("[Error] No form found for 'User Post'. Therefore, can't create new post. Operation aborted")
+
+      return
+    }
+
+    let codeEditorLanguageElement = form.querySelector(".code-editor__header > select")
+    let hiddenCodeInput = form.querySelector("input[name=code]")
 
     if (!codeEditorLanguageElement) {
       console.log("[Error] Unable to find language selector for code editor")
@@ -255,40 +287,23 @@ function conditionalInitialization(flags, views) {
       return
     }
 
+    // INFO: Why not 'postID' ?
     let defaultPostID = codeEditorLanguageElement.dataset.idPost
     if (defaultPostID > 0)
       console.log("[Warning] Default PostID must be 0 or lesser for a post that has yet to be created in the DB. Current PostID = ", defaultPostID)
 
-
-    form.addEventListener("submit", function(e) {
+    form.addEventListener("submit", function(_) {
       let codeContent = views[defaultPostID].state.doc
-      hiddenCodeInput.value = codeContent
+      let codeContentFormated = codeContent.text.toString()
 
-      // WARNING: This code below is only for debuging purpose
-      // console.log("codeContent: ", codeContent)
-
-      let codeContentFormated = ""
-
-      /*
-      codeContent.text.forEach((el) => {
-        codeContentFormated += el + "\n"
-      })
-      */
-
-      // console.log("codeContentFormated: ", codeContentFormated)
-      // e.preventDefault()
-
-      codeContentFormated = codeContent.text.toString()
       hiddenCodeInput.value = codeContentFormated
-
-      // console.log("codeContentFormated: ", codeContentFormated)
-      // e.preventDefault()
     })
 
   }
 
-  if (flags.isCreatePostPage) {
-    registerHookForPostCreation(views)
+  if (flags.isCreatePostElement) {
+    let postID = getCreationPostID()
+    registerHookForPostCreation(views, postID)
   }
 }
 
@@ -300,6 +315,7 @@ let VIEWS = {}
 
 VIEWS = generateOriginalPostOnDOM(GLOBAL_DATA_ORIGINAL_POSTER, VIEWS)
 VIEWS = generateAnswerPostOnDOM(GLOBAL_DATA_ANSWERS_POSTER, VIEWS)
+VIEWS = generateEmptyPostOnDom(GLOBAL_DATA_EMPTY_POSTER, VIEWS)
 
 GLOBAL_VIEWS = VIEWS
 
