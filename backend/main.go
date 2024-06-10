@@ -1,47 +1,106 @@
 package main
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"context"
+	"database/sql"
+	_ "embed"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"online_code_platform_server/sqlc/database"
 	"os"
 	"path/filepath"
+	"strconv"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/mattn/go-sqlite3"
+	"online_code_platform_server/storage"
+	"online_code_platform_server/views"
+)
+
+//go:embed sqlc/schema.sql
+var schema string
+
+var (
+	DB *sql.DB
 )
 
 func main() {
-	path, _ := os.Getwd()
-	pathStaticFiles := filepath.Join(path, "..", "dist/")
+	queries, ctx := setupDatabase()
 
 	router := chi.NewRouter()
-
 	router.Use(middleware.Logger)
 
-	// router.Handle("/folder", http.RedirectHandler("/", http.StatusTemporaryRedirect))
+	setupRoute(router, queries, ctx)
+
+	port := ":2200"
+	server := http.Server{
+		Addr:    port,
+		Handler: router,
+	}
+
+	log.Println("[Server] Running server at " + port)
+
+	err := server.ListenAndServe()
+	if err != nil {
+		log.Println("Server error : ", err.Error())
+	}
+}
+
+func setupDatabase() (*database.Queries, *context.Context) {
+	db, err := sql.Open("sqlite3", "posts.db")
+	if err != nil {
+		message := "[DB] Error while opening DB -- " + err.Error()
+		log.Println(message)
+
+		panic(err)
+	}
+
+	DB = db
+	ctx := context.Background()
+
+	_, err = db.ExecContext(ctx, schema)
+	if err != nil {
+		message := "[DB Schema] Error while executing DB sql schema -- " + err.Error()
+		log.Println(message)
+
+		panic(err)
+	}
+
+	queries := database.New(db)
+
+	return queries, &ctx
+}
+
+func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.Context) {
 
 	router.Get("/assets/*", func(w http.ResponseWriter, req *http.Request) {
 		path, _ := os.Getwd()
 		path = filepath.Join(path, "..", "dist/")
 
-		path = pathStaticFiles
+		path = views.PathStaticFiles
 		fs := http.FileServer(http.Dir(path))
-
-		// log.Printf("fs : %#v\n\n", fs)
-		// log.Printf("http.Dir('../dist/') : %#v\n\n", http.Dir(path))
-		// log.Printf("request : %#v\n\n", req)
 
 		fs.ServeHTTP(w, req)
 	})
 
 	router.Route("/code-snipets/", func(r chi.Router) {
 		r.Get("/new", func(w http.ResponseWriter, req *http.Request) {
+			path := views.PathStaticFiles
 
-			// pathToFile := filepath.Join(pathStaticFiles, "new_snippet.html")
-			pathToFile := filepath.Join(pathStaticFiles, "new", "index.html")
-			pathToComponentFile := filepath.Join(pathStaticFiles, "components.tmpl")
+			pathToFile := filepath.Join(path, "new", "index.html")
+			pathToComponentFile := filepath.Join(path, "components.tmpl")
 
-			tmpl, err := template.ParseFiles(pathToFile, pathToComponentFile)
+			tmpl := template.New("index.html")
+
+			tmpl.Funcs(map[string]interface{}{
+				"dict": views.CreateDictionaryFuncTemplate,
+			})
+
+			tmpl, err := tmpl.ParseFiles(pathToFile, pathToComponentFile)
 			if err != nil {
 				message := "[" + req.URL.Path + "] "
 				message += "Error parsing html/template file -- " + err.Error()
@@ -51,28 +110,23 @@ func main() {
 				return
 			}
 
-			type Post struct {
-				PostId        int
-				Username      string
-				CodeSnipet    string
-				LanguageLabel string
-				Comment       string
-				Date          string // time.Now() ?????????????????//
+			langs := storage.CodeLanguages
+
+			orginalPost := views.Post{
+				PostId:       0,
+				LanguageCode: langs[0].Code,
 			}
 
-			orginalPost := Post{
-				PostId:        0,
-				LanguageLabel: "js",
-			}
-
-			answersPost := []Post{}
+			answersPost := []views.Post{}
 
 			posts := struct {
-				OriginalPost Post
-				AnswersPost  []Post
+				OriginalPost  views.Post
+				AnswersPost   []views.Post
+				CodeLanguages [len(langs)]storage.CodingLanguage
 			}{
-				OriginalPost: orginalPost,
-				AnswersPost:  answersPost,
+				OriginalPost:  orginalPost,
+				AnswersPost:   answersPost,
+				CodeLanguages: langs,
 			}
 
 			err = tmpl.Execute(w, posts)
@@ -84,78 +138,164 @@ func main() {
 				http.Error(w, message, http.StatusInternalServerError)
 				return
 			}
-
 		})
 
 		r.Post("/new/save", func(w http.ResponseWriter, req *http.Request) {
 			req.ParseForm()
-			log.Printf("%#v", req.Form)
+			log.Printf("%#v \n\n", req.Form)
 
-			http.Redirect(w, req, "../1234", http.StatusSeeOther)
-		})
+			var formLangCode string = req.FormValue("language")
 
-		r.Get("/{snipet_id}", func(w http.ResponseWriter, req *http.Request) {
-			snipetId := chi.URLParam(req, "snipet_id")
-			_ = snipetId
+			lang, _ := storage.GetLanguageDetailsFromCode(formLangCode)
 
-			pathToFile := filepath.Join(pathStaticFiles, "index.html")
-			pathToComponentFile := filepath.Join(pathStaticFiles, "components.tmpl")
+			// TODO: User need proper DB table
+			// WARNING: Remove 'defaultUserID' for an appropriate one
+			defaultUserID := -3
 
-			tmpl, err := template.ParseFiles(pathToFile, pathToComponentFile)
+			input := database.AddPostParams{
+				Code:       req.FormValue("code"),
+				Comment:    req.FormValue("comment"),
+				UserID:     int64(defaultUserID),
+				LanguageID: int64(lang.ID),
+				PostDate:   time.Now().String(),
+			}
+
+			post, err := queries.AddPost(*dbContext, input)
+
 			if err != nil {
-				http.Error(w, "File not Found for "+snipetId+" :: "+err.Error(), http.StatusNotFound)
+				message := "[" + req.URL.Path + "] "
+				message += "Error while Inserting Post into DB -- " + err.Error()
+				log.Println(message)
+
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			// tmpl.Execute(w, snipetId)
-			// tmpl.Execute(w, template.HTML(`<b>World</b>`))
-
-			type Post struct {
-				PostId        int
-				Username      string
-				CodeSnipet    string
-				LanguageLabel string
-				Comment       string
-				Date          string // time.Now() ?????????????????//
+			postTree := database.AddPostIntoTreeParams{
+				PostID:       post.PostID,
+				ParentPostID: -1,
 			}
 
-			orginalPost := Post{
-				PostId:        2,
-				Username:      "Karla",
-				CodeSnipet:    "// Hello World Try by KARLA \n console.log('Hello World')\n\nfunction man() {\n\talert('Yeah')\n}",
-				LanguageLabel: "js",
-				Date:          "March 2024",
-				Comment:       "How to do the same thing with Golang instead ? Help !",
+			_, err = queries.AddPostIntoTree(*dbContext, postTree)
+			if err != nil {
+				message := "[" + req.URL.Path + "] "
+				message += "Error while Inserting PostTree into DB -- " + err.Error()
+				log.Println(message)
+
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 
-			answersPost := []Post{
-				{
-					PostId:        4,
-					Username:      "IamTrolling",
-					CodeSnipet:    "# I dont know X) \ndef mouchachou(): \n\tprint('hello friend')",
-					LanguageLabel: "python",
-					Comment:       "Hope it helped X-)",
-					Date:          "May 2024",
-				},
-				{
-					PostId:        8,
-					Username:      "steveen",
-					CodeSnipet:    "package main \n\nfunc main() { \n\tfmt.Println('Hello World') \n}",
-					LanguageLabel: "go",
-					Comment:       "Note that I didn't include the 'package' statement, as well as the necessary 'import'",
-					Date:          "May 2024",
-				},
+			nextUrl := fmt.Sprintf("../%d", post.PostID)
+
+			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
+		})
+
+		r.Get("/{snipet_id}", func(w http.ResponseWriter, req *http.Request) {
+
+			path := views.PathStaticFiles
+
+			pathToFile := filepath.Join(path, "index.html")
+			pathToComponentFile := filepath.Join(path, "components.tmpl")
+
+			tmpl := template.New("index.html")
+
+			tmpl.Funcs(map[string]interface{}{
+				"dict": views.CreateDictionaryFuncTemplate,
+			})
+
+			tmpl, err := tmpl.ParseFiles(pathToFile, pathToComponentFile)
+			if err != nil {
+				message := "[" + req.URL.Path + "] "
+				message += "Error while parsing Template file -- " + err.Error()
+				log.Println(message)
+
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 
-			posts := struct {
-				OriginalPost Post
-				AnswersPost  []Post
-			}{
-				OriginalPost: orginalPost,
-				AnswersPost:  answersPost,
+			// TODO:
+			// GET User Posts ...
+			idParamString := chi.URLParam(req, "snipet_id")
+			snipetId, err := strconv.Atoi(idParamString)
+
+			if err != nil {
+				message := "[" + req.URL.Path + "] "
+				message += "URL parameter (id) must be an integer -- " + err.Error()
+				log.Println(message)
+
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 
-			err = tmpl.Execute(w, posts)
+			orginalPostParam := database.GetPostsFromRootParams{
+				PostID:       int64(snipetId),
+				ParentPostID: int64(snipetId),
+			}
+
+			//
+			// WARNING: The current implementation dont fetch the user info, since 'users' table not userd
+			// In the future, we should take it into consideration
+			//
+			posts, err := queries.GetPostsFromRoot(*dbContext, orginalPostParam)
+			if err != nil {
+				message := "[" + req.URL.Path + "] "
+				message += "Unable to get 'posts' from DB -- " + err.Error()
+				log.Println(message)
+
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if len(posts) == 0 {
+				// TODO: Show something if there is no posts available for a particular postID
+				message := "[" + req.URL.Path + "] "
+				message += "No Post Found"
+				log.Println(message)
+
+				w.Write([]byte("Page Not Found"))
+				return
+			}
+
+			postsConverted := []views.Post{}
+
+			for _, post := range posts {
+				tmp := views.Post{}
+				tmp.New(post)
+
+				postsConverted = append(postsConverted, tmp)
+			}
+
+			orginalPost := views.Post{}
+			answersPost := []views.Post{}
+
+			if len(postsConverted) <= 0 {
+				// TODO: Show something if there is no posts available for a particular postID
+				message := "[" + req.URL.Path + "] "
+				message += "No Post Found"
+				log.Println(message)
+
+				w.Write([]byte("Page Not Found"))
+				return
+			} else if len(postsConverted) > 0 {
+				orginalPost = postsConverted[0]
+			}
+
+			if len(postsConverted) > 1 {
+				answersPost = postsConverted[1:]
+			}
+
+			langs := storage.CodeLanguages
+
+			postsFormated := views.PostTree{
+				OriginalPost:  orginalPost,
+				AnswersPost:   answersPost,
+				CodeLanguages: langs[:],
+			}
+
+			fmt.Printf("\n Before Failure \n\n %#v \n\n", posts)
+
+			err = tmpl.Execute(w, postsFormated)
 			if err != nil {
 				message := "[" + req.URL.Path + "] "
 				message += "Error while executing template -- " + err.Error()
@@ -171,17 +311,4 @@ func main() {
 		})
 	})
 
-	port := ":2200"
-
-	server := http.Server{
-		Addr:    port,
-		Handler: router,
-	}
-
-	log.Println("[Server] Running server at " + port)
-
-	err := server.ListenAndServe()
-	if err != nil {
-		log.Println("Server error : ", err.Error())
-	}
 }
