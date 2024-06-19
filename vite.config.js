@@ -15,7 +15,7 @@ export default defineConfig({
         app: "src/app.js"
       },
       watch: {
-        include: ["./src/**"],
+        include: ["./src/**/*"],
       }
     }
   }
