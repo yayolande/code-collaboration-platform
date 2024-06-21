@@ -66,23 +66,30 @@ func (q *Queries) AddPostIntoTree(ctx context.Context, arg AddPostIntoTreeParams
 const addUser = `-- name: AddUser :one
 ;
 
-INSERT INTO users (username, password, status) VALUES (?, ?, ?)
-RETURNING user_id, username, password, status
+INSERT INTO users (username, password, email, status) VALUES (?, ?, ?, ?)
+RETURNING user_id, username, password, email, status
 `
 
 type AddUserParams struct {
 	Username string
 	Password string
+	Email    string
 	Status   int64
 }
 
 func (q *Queries) AddUser(ctx context.Context, arg AddUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, addUser, arg.Username, arg.Password, arg.Status)
+	row := q.db.QueryRowContext(ctx, addUser,
+		arg.Username,
+		arg.Password,
+		arg.Email,
+		arg.Status,
+	)
 	var i User
 	err := row.Scan(
 		&i.UserID,
 		&i.Username,
 		&i.Password,
+		&i.Email,
 		&i.Status,
 	)
 	return i, err
@@ -146,7 +153,7 @@ func (q *Queries) GetPostsFromRoot(ctx context.Context, arg GetPostsFromRootPara
 }
 
 const getUsers = `-- name: GetUsers :many
-SELECT user_id, username, password, status FROM users
+SELECT user_id, username, password, email, status FROM users
 `
 
 func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
@@ -162,6 +169,7 @@ func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
 			&i.UserID,
 			&i.Username,
 			&i.Password,
+			&i.Email,
 			&i.Status,
 		); err != nil {
 			return nil, err
@@ -175,4 +183,30 @@ func (q *Queries) GetUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const loginUser = `-- name: LoginUser :one
+;
+
+SELECT user_id, username, password, email, status FROM users 
+  WHERE username = ? AND password = ? 
+  LIMIT 1
+`
+
+type LoginUserParams struct {
+	Username string
+	Password string
+}
+
+func (q *Queries) LoginUser(ctx context.Context, arg LoginUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, loginUser, arg.Username, arg.Password)
+	var i User
+	err := row.Scan(
+		&i.UserID,
+		&i.Username,
+		&i.Password,
+		&i.Email,
+		&i.Status,
+	)
+	return i, err
 }

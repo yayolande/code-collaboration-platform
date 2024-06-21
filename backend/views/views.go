@@ -9,10 +9,12 @@ import (
 )
 
 var PathStaticFiles string
+var PathToSqueletonPage string
 
 func init() {
 	path, _ := os.Getwd()
 	PathStaticFiles = filepath.Join(path, "..", "dist/")
+	PathToSqueletonPage = filepath.Join(PathStaticFiles, "partial.tmpl")
 }
 
 type Post struct {

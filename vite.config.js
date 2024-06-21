@@ -3,6 +3,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   root: "./src",
   publicDir: "public",
+  assetsInclude: ["**/*.css"],
   build: {
     copyPublicDir: true,
     outDir: "../dist",
@@ -10,8 +11,13 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: "src/index.html",
-        new: "./src/new/index.html",
-        new_snippet: "./src/new_snippet.html",
+        // partial: "./src/partial.tmpl",
+        login: "./src/login/index.html",
+        register: "./src/register/index.html",
+        post: "./src/post/index.html",
+        new_post: "./src/new/index.html",
+        // style: "./src/assets/style.css",
+        // assets: "./src/assets/",
         app: "src/app.js"
       },
       watch: {

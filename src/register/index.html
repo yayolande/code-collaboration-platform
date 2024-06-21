@@ -1,0 +1,32 @@
+{{ define "main" }}
+
+<form class="container section box column is-4 is-offset-4" method="post">
+  <h2 class="title has-text-centered mb-5">Registration Page</h2>
+
+  {{ if .error_message_registration }}
+  <p class="has-text-centered block"><strong class="has-text-danger">{{ .error_message_registration }}</strong></p>
+  {{ end }}
+
+  <div class="field">
+    <input class="input" name="username" placeholder="Username" />
+  </div>
+
+  <div class="field">
+    <input class="input" type="password" name="password" placeholder="Password" />
+  </div>
+
+  <div class="field">
+    <input class="input" type="password" name="confirm_password" placeholder="Confirm Password" />
+  </div>
+
+  <div class="field mb-6">
+    <input class="input" type="email" name="email" placeholder="Email" />
+  </div>
+
+  <button class="button is-fullwidth is-primary">Register</button>
+</form>
+
+{{ end }}
+
+{{ define "custom_data_js" }}
+{{ end }}

@@ -3,8 +3,13 @@
 SELECT * FROM users ;
 
 -- name: AddUser :one
-INSERT INTO users (username, password, status) VALUES (?, ?, ?)
+INSERT INTO users (username, password, email, status) VALUES (?, ?, ?, ?)
 RETURNING * ;
+
+-- name: LoginUser :one
+SELECT * FROM users 
+  WHERE username = ? AND password = ? 
+  LIMIT 1 ;
 
 -- name: AddPost :one
 INSERT INTO posts (user_id, language_id, code, comment, post_date)
