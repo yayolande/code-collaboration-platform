@@ -32,6 +32,7 @@ func ServeStaticAssets(w http.ResponseWriter, req *http.Request) {
 }
 
 func GetHomePage(bucket *DatabaseBucket, sessionManager *scs.SessionManager) http.HandlerFunc {
+
 	return func(w http.ResponseWriter, req *http.Request) {
 		basePath := views.PathStaticFiles
 
@@ -59,7 +60,6 @@ func GetHomePage(bucket *DatabaseBucket, sessionManager *scs.SessionManager) htt
 			http.Error(w, message, http.StatusInternalServerError)
 			return
 		}
-
 	}
 }
 
@@ -214,16 +214,16 @@ func GetPost(dbBucket *DatabaseBucket, urlParamName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		basePath := views.PathStaticFiles
 
-		pathToFile := filepath.Join(basePath, "post", "index.html")
-		pathToComponentFile := filepath.Join(basePath, "components.tmpl")
+		pathToSqueletonPage := views.PathToSqueletonPage
+		pathToPostContent := filepath.Join(basePath, "post", "index.html")
+		pathToComponentPage := views.PathToComponentPage
 
-		tmpl := template.New("index.html")
-
+		tmpl := template.New(views.NameSqueletonPage)
 		tmpl.Funcs(map[string]interface{}{
 			"dict": views.CreateDictionaryFuncTemplate,
 		})
 
-		tmpl, err := tmpl.ParseFiles(pathToFile, pathToComponentFile)
+		tmpl, err := tmpl.ParseFiles(pathToSqueletonPage, pathToPostContent, pathToComponentPage)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
 			message += "Error while parsing Template file -- " + err.Error()

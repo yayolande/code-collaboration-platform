@@ -28,11 +28,13 @@
   <div id="user-post__{{ .PostID }}" class="original-poster">
     <div class="code-editor">
       <div class="code-editor__header">
-        <select name="language" data-id-post="{{ .PostID }}">
-        {{- range $.Lang }}
-          <option value="{{ .Code }}">{{ .Label }}</option>
-        {{- end }}
-        </select>
+        <div class="select is-link">
+          <select name="language" data-id-post="{{ .PostID }}">
+          {{- range $.Lang }}
+            <option value="{{ .Code }}">{{ .Label }}</option>
+          {{- end }}
+          </select>
+        </div>
       </div>
 
       <div class="code-editor__body">
@@ -40,8 +42,7 @@
     </div>
 
     <div class="comment">
-      {{/* . */}}
-      <textarea name="comment" class="comment__body">
+      <textarea class="textarea" name="comment" class="comment__body">
         {{- .Comment }}
         {{ .Username -}}
       </textarea>

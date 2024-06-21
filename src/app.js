@@ -154,7 +154,7 @@ function generateRawPostOnDOM(post, views) {
   }
 
   let codeEditorElement = postHtmlElement.getElementsByClassName("code-editor__body")[0]
-  let codeEditorLanguageElement = postHtmlElement.querySelector(".code-editor__header > select")
+  let codeEditorLanguageElement = postHtmlElement.querySelector(".code-editor__header select")
 
   if (!codeEditorElement || !codeEditorLanguageElement) {
     console.log("[Warning - generateRawPostOnDOM()] codeEditor(Language)Element == null, abording Code Editor binding ...")
@@ -270,7 +270,7 @@ function conditionalInitialization(flags, views) {
       return
     }
 
-    let codeEditorLanguageElement = form.querySelector(".code-editor__header > select")
+    let codeEditorLanguageElement = form.querySelector(".code-editor__header select")
     let hiddenCodeInput = form.querySelector("input[name=code]")
 
     if (!codeEditorLanguageElement) {

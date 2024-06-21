@@ -1,54 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
+{{ define "main" }}
 
-<head>
-  <title>Online Code Platform</title>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
+<form class="box section container has-text-centered" method="get">
+  <h2 class="title mb-3">Search</h2>
+  <div class="field column is-4 is-offset-4">
+    <input class="input" name="search" placeholder="Search Posts ..." />
+  </div>
+  <button class="button has-text-centered is-link px-6" type="submit">Go !</button>
+</form>
 
-<body>
-  <style>
-  </style>
-  {{- $originalPost := .OriginalPost -}}
-  {{- $answersPost := .AnswersPost -}}
-  {{- $codeLanguages := .CodeLanguages -}}
+<div class="box section container">
+  <p class="has-text-centered">Posts Comming Soon ...</p>
+</div>
 
-  {{ template "style" }}
+{{ end }}
 
-  {{ template "header" . }}
-
-  <main>
-    <section>
-      {{- $post := dict "Post" $originalPost "Lang" $codeLanguages -}}
-      {{ template "user-post" $post }}
-
-      <a href="new">Create New Post !</a>
-      <div class="people-answers">
-        {{- range $answersPost }}
-
-        {{- $post = dict "Post" . "Lang" $codeLanguages -}}
-        {{ template "user-post" $post }}
-
-        {{- end }}
-      </div>
-      <div class="new-answer">
-        <strong>New answer:</strong>
-        {{ template "user-post-form" . }}
-      </div>
-    </section>
-  </main>
-
-  {{ template "footer" . }}
-</body>
-
-{{ template "global_var_js" . }}
-
-<script>
-  GLOBAL_FLAGS.isCreatePostElement = true
-</script>
-
-<script type="module" src="app.js">
-</script>
-
-</html>
+{{ define "custom_data_js" }}
+{{ end }}

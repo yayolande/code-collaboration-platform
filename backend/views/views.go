@@ -10,11 +10,17 @@ import (
 
 var PathStaticFiles string
 var PathToSqueletonPage string
+var PathToComponentPage string
+var NameSqueletonPage string
 
 func init() {
+	// NameSqueletonPage = "partial.tmpl"
+	NameSqueletonPage = "partial.html"
+
 	path, _ := os.Getwd()
 	PathStaticFiles = filepath.Join(path, "..", "dist/")
-	PathToSqueletonPage = filepath.Join(PathStaticFiles, "partial.tmpl")
+	PathToSqueletonPage = filepath.Join(PathStaticFiles, NameSqueletonPage)
+	PathToComponentPage = filepath.Join(PathStaticFiles, "components.tmpl")
 }
 
 type Post struct {

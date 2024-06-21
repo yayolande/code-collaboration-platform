@@ -16,6 +16,7 @@ export default defineConfig({
         register: "./src/register/index.html",
         post: "./src/post/index.html",
         new_post: "./src/new/index.html",
+        partial: "./src/partial.html",
         // style: "./src/assets/style.css",
         // assets: "./src/assets/",
         app: "src/app.js"

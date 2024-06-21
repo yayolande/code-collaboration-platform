@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Online Code Platform</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+  <style>
+  </style>
+  {{- $originalPost := .OriginalPost -}}
+  {{- $answersPost := .AnswersPost -}}
+  {{- $codeLanguages := .CodeLanguages -}}
+
+  {{ template "style" }}
+
+  {{ template "header" . }}
+
+  <main>
+    <section>
+      {{- $post := dict "Post" $originalPost "Lang" $codeLanguages -}}
+      {{ template "user-post" $post }}
+
+      <a href="new">Create New Post !</a>
+      <div class="people-answers">
+        {{- range $answersPost }}
+
+        {{- $post = dict "Post" . "Lang" $codeLanguages -}}
+        {{ template "user-post" $post }}
+
+        {{- end }}
+      </div>
+      <div class="new-answer">
+        <strong>New answer:</strong>
+        {{ template "user-post-form" . }}
+      </div>
+    </section>
+  </main>
+
+  {{ template "footer" . }}
+</body>
+
+{{ template "global_var_js" . }}
+
+<script>
+  GLOBAL_FLAGS.isCreatePostElement = true
+</script>
+
+<script type="module" src="../app.js">
+</script>
+
+</html>
