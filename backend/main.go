@@ -25,7 +25,7 @@ var (
 )
 
 func main() {
-	queries, ctx := setupDatabase()
+	dbBucket := setupDatabase()
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
@@ -33,7 +33,12 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Store = memstore.New()
 
-	setupRoute(router, queries, ctx, sessionManager)
+	routeHandler := handlers.NewRouteHandler()
+	routeHandler.Router = router
+	routeHandler.Cookie = sessionManager
+	routeHandler.Bucket = dbBucket
+
+	setupRoute(routeHandler)
 
 	port := ":2200"
 	server := http.Server{
@@ -49,7 +54,7 @@ func main() {
 	}
 }
 
-func setupDatabase() (*database.Queries, *context.Context) {
+func setupDatabase() *handlers.DatabaseBucket {
 	db, err := sql.Open("sqlite3", "posts.db")
 	if err != nil {
 		message := "[DB] Error while opening DB -- " + err.Error()
@@ -71,32 +76,33 @@ func setupDatabase() (*database.Queries, *context.Context) {
 
 	queries := database.New(db)
 
-	return queries, &ctx
-}
-
-func setupRoute(router *chi.Mux, queries *database.Queries, dbContext *context.Context, sessionManager *scs.SessionManager) {
 	dbBucket := &handlers.DatabaseBucket{
 		DB:        DB,
 		Queries:   queries,
-		DBContext: dbContext,
+		DBContext: &ctx,
 	}
 
-	router.Get("/assets/*", handlers.ServeStaticAssets)
-	// router.Post("/new/save", handlers.SavePost(dbBucket))
-	router.Get("/", handlers.GetHomePage(dbBucket, sessionManager))
-	router.Get("/login", handlers.GetLoginPage(sessionManager))
-	router.Post("/login", handlers.LoginUser(dbBucket, sessionManager))
-	router.Get("/logout", handlers.LogoutUser(sessionManager))
+	return dbBucket
+}
 
-	router.Get("/register", handlers.GetRegistrationPage(sessionManager))
-	router.Post("/register", handlers.RegisterUser(dbBucket, sessionManager))
+func setupRoute(server *handlers.RouteHandler) {
+	router := server.Router
+
+	router.Get("/assets/*", handlers.ServeStaticAssets)
+
+	router.Get("/", server.GetHomePage())
+	router.Get("/login", server.GetLoginPage())
+	router.Post("/login", server.LoginUser())
+	router.Get("/logout", server.LogoutUser())
+
+	router.Get("/register", server.GetRegistrationPage())
+	router.Post("/register", server.RegisterUser())
 
 	router.Route("/code/", func(r chi.Router) {
-		r.Get("/new", handlers.CreateNewPost)
-		// TODO: Modify the route paht below to "/new" but using method "POST"
-		r.Post("/new/save", handlers.SavePost(dbBucket))
+		r.Get("/new", server.GetNewPost())
+		r.Post("/new", server.SavePost())
 
-		r.Get("/{snippet_id}", handlers.GetPost(dbBucket, "snippet_id"))
+		r.Get("/{snippet_id}", server.GetPost("snippet_id"))
 
 		r.Get("/test", func(w http.ResponseWriter, req *http.Request) {
 			http.ServeFile(w, req, "../dist/index.html")

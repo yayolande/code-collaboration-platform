@@ -24,6 +24,42 @@ type DatabaseBucket struct {
 	DBContext *context.Context
 }
 
+type RouteHandler struct {
+	Router *chi.Mux
+	Bucket *DatabaseBucket
+	Cookie *scs.SessionManager
+}
+
+func NewRouteHandler() *RouteHandler {
+	r := &RouteHandler{}
+
+	return r
+}
+
+var cookieKeyUserID string
+var cookieKeyUserName string
+var cookieKeyUserEmail string
+
+var cookieKeyMessageErrorLogin string
+var cookieKeyMessageSuccessLogin string
+var cookieKeyMessageErrorRegistration string
+var cookieKeyMessageSuccessRegistration string
+var cookieKeyMessageErrorNewPost string
+
+func init() {
+	cookieKeyUserID = "user_id"
+	cookieKeyUserName = "user_name"
+	cookieKeyUserEmail = "user_email"
+
+	cookieKeyMessageErrorLogin = "error_message_login"
+	cookieKeyMessageSuccessLogin = "success_message_login"
+
+	cookieKeyMessageErrorRegistration = "error_message_registration"
+	cookieKeyMessageSuccessRegistration = "success_message_registration"
+
+	cookieKeyMessageErrorNewPost = "error_message_new_post"
+}
+
 func ServeStaticAssets(w http.ResponseWriter, req *http.Request) {
 	path := views.PathStaticFiles
 	fs := http.FileServer(http.Dir(path))
@@ -31,7 +67,7 @@ func ServeStaticAssets(w http.ResponseWriter, req *http.Request) {
 	fs.ServeHTTP(w, req)
 }
 
-func GetHomePage(bucket *DatabaseBucket, sessionManager *scs.SessionManager) http.HandlerFunc {
+func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		basePath := views.PathStaticFiles
@@ -63,71 +99,95 @@ func GetHomePage(bucket *DatabaseBucket, sessionManager *scs.SessionManager) htt
 	}
 }
 
-// r.Get("/new",
-func CreateNewPost(w http.ResponseWriter, req *http.Request) {
-	basePath := views.PathStaticFiles
+func (s *RouteHandler) GetNewPost() http.HandlerFunc {
+	sessionManager := s.Cookie
 
-	pathToFile := filepath.Join(basePath, "new", "index.html")
-	pathToComponentFile := filepath.Join(basePath, "components.tmpl")
+	return func(w http.ResponseWriter, req *http.Request) {
+		basePath := views.PathStaticFiles
+		pathToNewPostContent := filepath.Join(basePath, "new", "index.html")
+		pathToSqueletonPage := views.PathToSqueletonPage
+		pathToComponentPage := views.PathToComponentPage
 
-	tmpl := template.New("index.html")
+		tmpl := template.New(views.NameSqueletonPage)
 
-	tmpl.Funcs(map[string]interface{}{
-		"dict": views.CreateDictionaryFuncTemplate,
-	})
+		tmpl.Funcs(map[string]interface{}{
+			"dict": views.CreateDictionaryFuncTemplate,
+		})
 
-	tmpl, err := tmpl.ParseFiles(pathToFile, pathToComponentFile)
-	if err != nil {
-		message := "[" + req.URL.Path + "] "
-		message += "Error parsing html/template file -- " + err.Error()
+		tmpl, err := tmpl.ParseFiles(pathToSqueletonPage, pathToNewPostContent, pathToComponentPage)
+		if err != nil {
+			message := "[" + req.URL.Path + "] "
+			message += "Error parsing html/template file -- " + err.Error()
 
-		log.Println(message)
-		http.Error(w, message, http.StatusInternalServerError)
-		return
-	}
+			log.Println(message)
+			http.Error(w, message, http.StatusInternalServerError)
+			return
+		}
 
-	langs := storage.CodeLanguages
+		messageError := sessionManager.PopString(req.Context(), cookieKeyMessageErrorNewPost)
+		langs := storage.CodeLanguages
 
-	posts := views.PostTree{
-		EmptyPost:     views.Post{},
-		OriginalPost:  views.Post{},
-		AnswersPost:   []views.Post{},
-		CodeLanguages: langs[:],
-	}
+		data := map[string]interface{}{
+			"EmptyPost":              views.Post{},
+			"OriginalPost":           views.Post{},
+			"AnswersPost":            []views.Post{},
+			"CodeLanguages":          langs[:],
+			"error_message_new_post": messageError,
+		}
 
-	err = tmpl.Execute(w, posts)
-	if err != nil {
-		message := "[" + req.URL.Path + "] "
-		message += "Error while executing html/template file -- " + err.Error()
+		err = tmpl.Execute(w, data)
+		if err != nil {
+			message := "[" + req.URL.Path + "] "
+			message += "Error while executing html/template file -- " + err.Error()
+			log.Println(message)
 
-		log.Println(message)
-		http.Error(w, message, http.StatusInternalServerError)
-		return
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorNewPost, messageError)
+
+			http.Error(w, message, http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
-// r.Post("/new/save",
-// func SavePost(DB *sql.DB, dbContext *context.Context, queries *database.Queries) http.HandlerFunc {
-func SavePost(dbBucket *DatabaseBucket) http.HandlerFunc {
-	DB := dbBucket.DB
-	queries := dbBucket.Queries
-	dbContext := dbBucket.DBContext
+func (s *RouteHandler) SavePost() http.HandlerFunc {
+	DB := s.Bucket.DB
+	queries := s.Bucket.Queries
+	dbContext := s.Bucket.DBContext
+
+	sessionManager := s.Cookie
 
 	return func(w http.ResponseWriter, req *http.Request) {
+		previousUrl := req.Header["Referer"][0]
+		indexStart := strings.Index(previousUrl, "/code/")
+		previousUrl = previousUrl[indexStart:]
+
 		req.ParseForm()
-		log.Printf("%#v \n\n", req.Form)
 
 		var formLangCode string = req.FormValue("language")
 		lang, _ := storage.GetLanguageDetailsFromCode(formLangCode)
 
 		// TODO: User need proper DB table
 		// WARNING: Remove 'defaultUserID' for an appropriate one
-		defaultUserID := -3
+		if !sessionManager.Exists(req.Context(), cookieKeyUserID) {
+			message := "[/" + req.Method + " " + req.URL.Path + "] "
+			message += "Error, User not logged to allow saving snippet into DB"
+
+			log.Println(message)
+
+			errorMessage := "Error, You are not a User! Unable to create Post"
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorNewPost, errorMessage)
+
+			nextUrl := previousUrl
+			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
+			return
+		}
+
+		userID := sessionManager.GetInt(req.Context(), cookieKeyUserID)
 
 		input := database.AddPostParams{
 			Code:       req.FormValue("code"),
 			Comment:    req.FormValue("comment"),
-			UserID:     int64(defaultUserID),
+			UserID:     int64(userID),
 			LanguageID: int64(lang.ID),
 			PostDate:   time.Now().String(),
 		}
@@ -137,7 +197,11 @@ func SavePost(dbBucket *DatabaseBucket) http.HandlerFunc {
 			message += "Cannot save 'Post' with empty 'Code Snippet' !"
 			log.Println(message)
 
-			http.Error(w, message, http.StatusInternalServerError)
+			message = "Cannot save 'Post' with empty 'Code Snippet' !"
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorNewPost, message)
+
+			nextUrl := previousUrl
+			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 			return
 		}
 
@@ -147,7 +211,11 @@ func SavePost(dbBucket *DatabaseBucket) http.HandlerFunc {
 			message += "Unable to parse 'parent post id' to integer -- " + err.Error()
 			log.Println(message)
 
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			message = "Internal error while processing the 'Post' data (Contact the admin)"
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorNewPost, message)
+
+			nextUrl := previousUrl
+			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 			return
 		}
 
@@ -161,7 +229,11 @@ func SavePost(dbBucket *DatabaseBucket) http.HandlerFunc {
 			message += "Transaction failed to start -- " + err.Error()
 			log.Println(message)
 
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			message = "Error while saving Post to database"
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorNewPost, message)
+
+			nextUrl := previousUrl
+			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 			return
 		}
 
@@ -175,7 +247,11 @@ func SavePost(dbBucket *DatabaseBucket) http.HandlerFunc {
 			message += "Error while Inserting Post into DB -- " + err.Error()
 			log.Println(message)
 
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			message = "Error while inserting Post into Database"
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorNewPost, message)
+
+			nextUrl := previousUrl
+			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 			return
 		}
 
@@ -190,26 +266,28 @@ func SavePost(dbBucket *DatabaseBucket) http.HandlerFunc {
 			message += "Error while Inserting PostTree into DB -- " + err.Error()
 			log.Println(message)
 
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			message = "Error while inserting Post Tree into Database"
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorNewPost, message)
+
+			nextUrl := previousUrl
+			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 			return
 		}
 
 		tx.Commit()
 
-		// nextUrl := fmt.Sprintf("../%d", post.PostID)
 		if parentPostID == -1 {
 			parentPostID = int(post.PostID)
 		}
 
-		// nextUrl := fmt.Sprintf("../%d", parentPostID)
-		nextUrl := "../" + strconv.Itoa(parentPostID)
+		nextUrl := "/code/" + strconv.Itoa(parentPostID)
 		http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 	}
 }
 
-func GetPost(dbBucket *DatabaseBucket, urlParamName string) http.HandlerFunc {
-	queries := dbBucket.Queries
-	dbContext := dbBucket.DBContext
+func (s *RouteHandler) GetPost(urlParamName string) http.HandlerFunc {
+	queries := s.Bucket.Queries
+	dbContext := s.Bucket.DBContext
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		basePath := views.PathStaticFiles
@@ -219,6 +297,7 @@ func GetPost(dbBucket *DatabaseBucket, urlParamName string) http.HandlerFunc {
 		pathToComponentPage := views.PathToComponentPage
 
 		tmpl := template.New(views.NameSqueletonPage)
+
 		tmpl.Funcs(map[string]interface{}{
 			"dict": views.CreateDictionaryFuncTemplate,
 		})
@@ -314,11 +393,12 @@ func GetPost(dbBucket *DatabaseBucket, urlParamName string) http.HandlerFunc {
 	}
 }
 
-func GetLoginPage(sessionManager *scs.SessionManager) http.HandlerFunc {
+func (s *RouteHandler) GetLoginPage() http.HandlerFunc {
+	sessionManager := s.Cookie
+
 	return func(w http.ResponseWriter, req *http.Request) {
 		basePath := views.PathStaticFiles
 
-		// pathToSqueleton := filepath.Join(basePath, "partial.tmpl")
 		pathToSqueleton := views.PathToSqueletonPage
 		pathToLoginContent := filepath.Join(basePath, "login/index.html")
 
@@ -332,8 +412,8 @@ func GetLoginPage(sessionManager *scs.SessionManager) http.HandlerFunc {
 			return
 		}
 
-		messageError := sessionManager.PopString(req.Context(), "error_message_login")
-		messageSuccess := sessionManager.PopString(req.Context(), "success_message_registration")
+		messageError := sessionManager.PopString(req.Context(), cookieKeyMessageErrorLogin)
+		messageSuccess := sessionManager.PopString(req.Context(), cookieKeyMessageSuccessRegistration)
 
 		data := map[string]interface{}{
 			"error_message_login":          messageError,
@@ -346,8 +426,8 @@ func GetLoginPage(sessionManager *scs.SessionManager) http.HandlerFunc {
 			message += "Error while executing template -- " + err.Error()
 			log.Println(message)
 
-			sessionManager.Put(req.Context(), "error_message_login", messageError)            // Save 'error_message_login' in order to display at least once the message to user
-			sessionManager.Put(req.Context(), "success_message_registration", messageSuccess) // Save 'success_message_registration' in order to display at least once the message to user
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorLogin, messageError)            // Save 'error_message_login' in order to display at least once the message to user
+			sessionManager.Put(req.Context(), cookieKeyMessageSuccessRegistration, messageSuccess) // Save 'success_message_registration' in order to display at least once the message to user
 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -355,18 +435,12 @@ func GetLoginPage(sessionManager *scs.SessionManager) http.HandlerFunc {
 	}
 }
 
-func LoginUser(bucket *DatabaseBucket, sessionManager *scs.SessionManager) http.HandlerFunc {
-	queries := bucket.Queries
-	dbContext := bucket.DBContext
+func (s *RouteHandler) LoginUser() http.HandlerFunc {
+	queries := s.Bucket.Queries
+	dbContext := s.Bucket.DBContext
+	sessionManager := s.Cookie
 
 	return func(w http.ResponseWriter, req *http.Request) {
-		/*
-			sessionManager.Put(req.Context(), "error_message_login", "Hello Steve, there is an issue with your login")
-
-			nextUrl := req.RequestURI
-			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
-		*/
-
 		req.ParseForm()
 		receivedUsername := req.PostFormValue("username")
 		receivedPassword := req.PostFormValue("password")
@@ -383,25 +457,25 @@ func LoginUser(bucket *DatabaseBucket, sessionManager *scs.SessionManager) http.
 			log.Println(message)
 
 			messageErrorLogin := "Wrong User Credential"
-			sessionManager.Put(req.Context(), "error_message_login", messageErrorLogin)
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorLogin, messageErrorLogin)
 
 			nextUrl := req.RequestURI
 			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 			return
 		}
 
-		// TODO: prep works to mark user as logged
-		sessionManager.Put(req.Context(), "user_id", userLogged.UserID)
-		sessionManager.Put(req.Context(), "user_name", userLogged.Username)
-		sessionManager.Put(req.Context(), "user_password", userLogged.Password)
-		sessionManager.Put(req.Context(), "user_email", userLogged.Email)
+		sessionManager.Put(req.Context(), cookieKeyUserID, userLogged.UserID)
+		sessionManager.Put(req.Context(), cookieKeyUserName, userLogged.Username)
+		sessionManager.Put(req.Context(), cookieKeyUserEmail, userLogged.Email)
 
 		nextUrl := "/"
 		http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 	}
 }
 
-func LogoutUser(sessionManager *scs.SessionManager) http.HandlerFunc {
+func (s *RouteHandler) LogoutUser() http.HandlerFunc {
+	sessionManager := s.Cookie
+
 	return func(w http.ResponseWriter, req *http.Request) {
 		err := sessionManager.Destroy(req.Context())
 		if err != nil {
@@ -418,7 +492,9 @@ func LogoutUser(sessionManager *scs.SessionManager) http.HandlerFunc {
 	}
 }
 
-func GetRegistrationPage(sessionManager *scs.SessionManager) http.HandlerFunc {
+func (s *RouteHandler) GetRegistrationPage() http.HandlerFunc {
+	sessionManager := s.Cookie
+
 	return func(w http.ResponseWriter, req *http.Request) {
 		basePath := views.PathStaticFiles
 
@@ -435,7 +511,7 @@ func GetRegistrationPage(sessionManager *scs.SessionManager) http.HandlerFunc {
 			return
 		}
 
-		msg := sessionManager.PopString(req.Context(), "error_message_registration")
+		msg := sessionManager.PopString(req.Context(), cookieKeyMessageErrorRegistration)
 		data := map[string]interface{}{
 			"error_message_registration": msg,
 		}
@@ -446,16 +522,17 @@ func GetRegistrationPage(sessionManager *scs.SessionManager) http.HandlerFunc {
 			message += "Error while executing template -- " + err.Error()
 			log.Println(message)
 
-			sessionManager.Put(req.Context(), "error_message_registration", msg) // Save error message so that user see it at least once
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorRegistration, msg) // Save error message so that user see it at least once
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 }
 
-func RegisterUser(bucket *DatabaseBucket, sessionManager *scs.SessionManager) http.HandlerFunc {
-	dbContext := bucket.DBContext
-	queries := bucket.Queries
+func (s *RouteHandler) RegisterUser() http.HandlerFunc {
+	dbContext := s.Bucket.DBContext
+	queries := s.Bucket.Queries
+	sessionManager := s.Cookie
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		req.ParseForm()
@@ -474,7 +551,7 @@ func RegisterUser(bucket *DatabaseBucket, sessionManager *scs.SessionManager) ht
 			log.Println(message)
 
 			registrationMessage := "Error, password not matching !"
-			sessionManager.Put(req.Context(), "error_message_registration", registrationMessage)
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorRegistration, registrationMessage)
 
 			nextUrl := req.RequestURI
 			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
@@ -487,7 +564,7 @@ func RegisterUser(bucket *DatabaseBucket, sessionManager *scs.SessionManager) ht
 			log.Println(message)
 
 			registrationMessage := "Error, empty username or password !"
-			sessionManager.Put(req.Context(), "error_message_registration", registrationMessage)
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorRegistration, registrationMessage)
 
 			nextUrl := req.RequestURI
 			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
@@ -508,7 +585,7 @@ func RegisterUser(bucket *DatabaseBucket, sessionManager *scs.SessionManager) ht
 			log.Println(message)
 
 			registrationMessage := err.Error()
-			sessionManager.Put(req.Context(), "error_message_registration", registrationMessage)
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorRegistration, registrationMessage)
 
 			nextUrl := req.RequestURI
 			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
@@ -518,7 +595,7 @@ func RegisterUser(bucket *DatabaseBucket, sessionManager *scs.SessionManager) ht
 		log.Printf("Registration successful: %#v", userRegistered)
 
 		registrationMessage := "Registration was successful"
-		sessionManager.Put(req.Context(), "success_message_registration", registrationMessage)
+		sessionManager.Put(req.Context(), cookieKeyMessageSuccessRegistration, registrationMessage)
 
 		nextUrl := "/login"
 		http.Redirect(w, req, nextUrl, http.StatusSeeOther)
