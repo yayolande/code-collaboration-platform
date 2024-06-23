@@ -10,7 +10,7 @@ body {
 }
 
 header {
-  padding: 20px 40px;
+  padding: 10px 20px;
   border-bottom: 1px solid grey;
 }
 
@@ -63,8 +63,4 @@ section {
   margin-top: 20px;
   padding: 30px;
   border: 1px solid grey;
-}
-
-footer p strong {
-  color: inherit;
 }

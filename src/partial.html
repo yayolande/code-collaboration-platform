@@ -11,37 +11,50 @@
   <link href="/assets/bulma.min.css" rel="stylesheet" />
 
   {{ if .OriginalPost }}
-    <script>
-      const  GLOBAL_DATA_ORIGINAL_POSTER = {{ .OriginalPost }};
-      const  GLOBAL_DATA_ANSWERS_POSTER = {{ .AnswersPost }};
-      const  GLOBAL_DATA_EMPTY_POSTER = {{ .EmptyPost }};
-      const  GLOBAL_FLAGS = {};
+  <script>
+    const GLOBAL_DATA_ORIGINAL_POSTER = {{ .OriginalPost}};
+    const GLOBAL_DATA_ANSWERS_POSTER = {{ .AnswersPost}};
+    const GLOBAL_DATA_EMPTY_POSTER = {{ .EmptyPost}};
+    const GLOBAL_FLAGS = {};
 
-      var GLOBAL_VIEWS = {}
-    </script>
+    var GLOBAL_VIEWS = {}
+  </script>
 
-    {{ template "custom_data_js" . }}
+  {{ template "custom_data_js" . }}
 
-    <script type="module" src="app.js"></script>
+  <script type="module" src="app.js"></script>
   {{ end }}
 
 </head>
 
 <body class="has-background-light">
   <header class="has-background-white">
-    <div class="nav-bar">
-      <div class="nav-bar__logo">
-        Snipet Coder
+    <div class="navbar">
+      <div class="navbar-brand">
+        <a href="/" class="navbar-item">Snippet Coder</a>
       </div>
 
-      <div>
-        <input />
-      </div>
+      <nav class="navbar-menu">
+        <div class="navbar-start">
+          <a href="https://github.com/yayolande/code-collaboration-platform" class="navbar-item"
+            target="_blank">Github</a>
+        </div>
 
-      <nav>
-        <a>Playground</a>
-        <a>Snipet</a>
-        <a href="/login" class="button is-primary">Login</a>
+        <div class="navbar-end">
+          <a class="navbar-item">Playground</a>
+          <a class="navbar-item">Snipet</a>
+
+          {{ if .user_id }}
+          <a href="/profile" class="navbar-item ml-6"><strong>{{ .user_name }}</strong></a>
+          <a href="/logout" class="navbar-item">
+            <button class="button is-danger has-text-light">Logout</button>
+          </a>
+          {{ else }}
+          <a href="/login" class="navbar-item ml-6">
+            <button class="button is-primary">Login</button>
+          </a>
+          {{ end }}
+        </div>
       </nav>
     </div>
   </header>
@@ -51,7 +64,10 @@
   </main>
 
   <footer class="footer has-background-dark">
-    <p class="has-text-centered has-text-light">Made By <strong>Steve Djumo</strong></p>
+    <p class="has-text-centered has-text-light">
+      Made By
+      <strong><a href="https://github.com/yayolande" class="has-text-success" target="_blank">Steve Djumo</a></strong>
+    </p>
   </footer>
 </body>
 

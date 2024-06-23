@@ -1,15 +1,21 @@
 {{ define "main" }}
 
+{{ if .error_message_login }}
+<div class="box container column is-4 notification is-danger">
+  <p class="has-text-centered block"><strong class="has-text-light">{{ .error_message_login }}</strong></p>
+</div>
+{{ end }}
+
+{{ if .success_message_registration }}
+<div class="box container column is-4 notification is-success">
+  <p class="has-text-centered block"><strong class="has-text-light">{{ .success_message_registration }}</strong></p>
+</div>
+{{ end }}
+
 <form class="container box column is-4 section mt-6" method="post">
   <h2 class="title has-text-centered mb-5">Login Page</h2>
 
-  {{ if .error_message_login }}
-  <p class="has-text-centered block"><strong class="has-text-danger">{{ .error_message_login }}</strong></p>
-  {{ end }}
 
-  {{ if .success_message_registration }}
-  <p class="has-text-centered block"><strong class="has-text-success">{{ .success_message_registration }}</strong></p>
-  {{ end }}
 
   <div class="field">
     <input class="input" name="username" placeholder="Username" />

@@ -60,6 +60,48 @@ func init() {
 	cookieKeyMessageErrorNewPost = "error_message_new_post"
 }
 
+func getLoggedUserID(cookie *scs.SessionManager, req *http.Request) int {
+	id := -1
+
+	if cookie.Exists(req.Context(), cookieKeyUserID) {
+		id = cookie.GetInt(req.Context(), cookieKeyUserID)
+	}
+
+	return id
+}
+
+func getLoggedUsername(cookie *scs.SessionManager, req *http.Request) string {
+	name := "PLACEHOLDER"
+
+	if cookie.Exists(req.Context(), cookieKeyUserName) {
+		name = cookie.GetString(req.Context(), cookieKeyUserName)
+	}
+
+	return name
+}
+
+func getLoggedUserEmail(cookie *scs.SessionManager, req *http.Request) string {
+	email := "PLACEHOLDER@toto.cm"
+
+	if cookie.Exists(req.Context(), cookieKeyUserEmail) {
+		email = cookie.GetString(req.Context(), cookieKeyUserEmail)
+	}
+
+	return email
+}
+
+func setUserDataForTemplateEngine(data map[string]interface{}, cookie *scs.SessionManager, req *http.Request) map[string]interface{} {
+	userID := getLoggedUsername(cookie, req)
+	userName := getLoggedUsername(cookie, req)
+	userEmail := getLoggedUserEmail(cookie, req)
+
+	data["user_id"] = userID
+	data["user_name"] = userName
+	data["user_email"] = userEmail
+
+	return data
+}
+
 func ServeStaticAssets(w http.ResponseWriter, req *http.Request) {
 	path := views.PathStaticFiles
 	fs := http.FileServer(http.Dir(path))
@@ -68,6 +110,7 @@ func ServeStaticAssets(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *RouteHandler) GetHomePage() http.HandlerFunc {
+	sessionManager := s.Cookie
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		basePath := views.PathStaticFiles
@@ -85,7 +128,10 @@ func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 			return
 		}
 
+		// TODO:  Fetch Posts with Search and Without search
+
 		data := map[string]interface{}{}
+		data = setUserDataForTemplateEngine(data, sessionManager, req)
 
 		err = tmpl.Execute(w, data)
 		if err != nil {
@@ -99,7 +145,7 @@ func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 	}
 }
 
-func (s *RouteHandler) GetNewPost() http.HandlerFunc {
+func (s *RouteHandler) GetNewPostPage() http.HandlerFunc {
 	sessionManager := s.Cookie
 
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -135,6 +181,8 @@ func (s *RouteHandler) GetNewPost() http.HandlerFunc {
 			"error_message_new_post": messageError,
 		}
 
+		data = setUserDataForTemplateEngine(data, sessionManager, req)
+
 		err = tmpl.Execute(w, data)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
@@ -166,8 +214,7 @@ func (s *RouteHandler) SavePost() http.HandlerFunc {
 		var formLangCode string = req.FormValue("language")
 		lang, _ := storage.GetLanguageDetailsFromCode(formLangCode)
 
-		// TODO: User need proper DB table
-		// WARNING: Remove 'defaultUserID' for an appropriate one
+		// WARNING: Not sure this is the right place for user authentication
 		if !sessionManager.Exists(req.Context(), cookieKeyUserID) {
 			message := "[/" + req.Method + " " + req.URL.Path + "] "
 			message += "Error, User not logged to allow saving snippet into DB"
@@ -285,9 +332,10 @@ func (s *RouteHandler) SavePost() http.HandlerFunc {
 	}
 }
 
-func (s *RouteHandler) GetPost(urlParamName string) http.HandlerFunc {
+func (s *RouteHandler) GetPostPage(urlParamName string) http.HandlerFunc {
 	queries := s.Bucket.Queries
 	dbContext := s.Bucket.DBContext
+	sessionManager := s.Cookie
 
 	return func(w http.ResponseWriter, req *http.Request) {
 		basePath := views.PathStaticFiles
@@ -374,14 +422,24 @@ func (s *RouteHandler) GetPost(urlParamName string) http.HandlerFunc {
 
 		langs := storage.CodeLanguages
 
-		postsFormated := views.PostTree{
-			EmptyPost:     views.Post{},
-			OriginalPost:  orginalPost,
-			AnswersPost:   answersPost,
-			CodeLanguages: langs[:],
-		}
+		/*
+			postsFormated := views.PostTree{
+				EmptyPost:     views.Post{},
+				OriginalPost:  orginalPost,
+				AnswersPost:   answersPost,
+				CodeLanguages: langs[:],
+			}
+		*/
 
-		err = tmpl.Execute(w, postsFormated)
+		data := map[string]interface{}{}
+		data["EmptyPost"] = views.Post{}
+		data["OriginalPost"] = orginalPost
+		data["AnswersPost"] = answersPost
+		data["CodeLanguages"] = langs[:]
+
+		data = setUserDataForTemplateEngine(data, sessionManager, req)
+
+		err = tmpl.Execute(w, data)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
 			message += "Error while executing template -- " + err.Error()
@@ -599,5 +657,30 @@ func (s *RouteHandler) RegisterUser() http.HandlerFunc {
 
 		nextUrl := "/login"
 		http.Redirect(w, req, nextUrl, http.StatusSeeOther)
+	}
+}
+
+func (s *RouteHandler) Nohup() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {}
+}
+
+func (s *RouteHandler) UserOnly(fn http.HandlerFunc) http.HandlerFunc {
+	sessionManager := s.Cookie
+
+	return func(w http.ResponseWriter, req *http.Request) {
+		if !sessionManager.Exists(req.Context(), cookieKeyUserID) {
+			message := "[" + req.URL.Path + "] "
+			message += "Error, user not authenticated !"
+			log.Println(message)
+
+			message = "Unauthorized access ! You must login first"
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorLogin, message)
+
+			nextUrl := "/login"
+			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
+			return
+		}
+
+		fn(w, req)
 	}
 }

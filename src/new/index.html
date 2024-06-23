@@ -1,50 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
+{{ define "main" }}
 
-<head>
-  <title>Online Code Platform</title>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
+{{ if .error_message_new_post }}
+<div class="box container notification is-danger">
+  <p class="has-text-centered block"><strong class="has-text-light">{{ .error_message_new_post }}</strong></p>
+</div>
+{{ end }}
 
-<body>
-  <style>
-  </style>
+<div class="box container section">
+  {{ template "user-post-form" . }}
+</div>
 
-  {{ template "style" }}
+{{ end }}
 
-  {{ template "header" . }}
 
-  <main>
-    <section>
-      {{ template "user-post-form" . }}
-
-      Yeah vite + rollup build watch is working properly !!!
-
-    </section>
-  </main>
-
-  {{ template "footer" . }}
-</body>
-
-<script type="module">
-  /*
-  let hiddenCodeInput = document.querySelector("section > form > input[name=code]")
-  let form = document.querySelector("body > main > section > form")
-
-  form.addEventListener("submit", function (e) {
-    hiddenCodeInput.value = "Modified by JS"
-  })
-  */
-</script>
-
-{{ template "global_var_js" . }}
+{{ define "custom_data_js" }}
 
 <script>
   GLOBAL_FLAGS.isCreatePostElement = true
 </script>
 
-<script type="module" src="../app.js">
-</script>
-
-</html>
+{{ end }}

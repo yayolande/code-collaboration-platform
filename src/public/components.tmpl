@@ -52,7 +52,7 @@
 {{ end }}
 
 {{ define "user-post-form" }}
-  <form action="new/save" method="post">
+  <form action="/code/new" method="post">
     {{- $post := dict "Post" .EmptyPost "Lang" .CodeLanguages -}}
     {{ template "user-post" $post }}
 
