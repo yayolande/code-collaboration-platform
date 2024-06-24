@@ -10,6 +10,35 @@
 
 <div class="box section container">
   <p class="has-text-centered">Posts Comming Soon ...</p>
+  {{- range .Posts -}}
+
+  {{ $comment := .Comment }}
+  {{ $code := .Code }}
+  {{ $lang := "NOT FOUND" }}
+  {{ $langID := .LanguageID }}
+  {{ $username := .Username }}
+
+  {{- range $.CodeLanguages -}}
+  {{ if eq .ID $langID }}
+  {{ $lang = .Label }}
+  {{ end }}
+  {{- end -}}
+
+  {{ $link := print "/code/" .PostID }}
+
+  <a href="{{ $link }}" class="card-box">
+    <div class="card-top">
+      <p class="card-top__comment is-size-5">{{ $comment }}</p>
+      <p class="card-top__lang tag is-medium">{{$lang}}</p>
+    </div>
+    <div class="card-middle has-text-grey">
+      {{ $code }}
+    </div>
+    <div class="card-bottom">
+      {{ $username }}
+    </div>
+  </a>
+  {{- end -}}
 </div>
 
 {{ end }}

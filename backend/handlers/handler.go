@@ -45,6 +45,7 @@ var cookieKeyMessageSuccessLogin string
 var cookieKeyMessageErrorRegistration string
 var cookieKeyMessageSuccessRegistration string
 var cookieKeyMessageErrorNewPost string
+var cookieKeyMessageErrorHome string
 
 func init() {
 	cookieKeyUserID = "user_id"
@@ -58,6 +59,7 @@ func init() {
 	cookieKeyMessageSuccessRegistration = "success_message_registration"
 
 	cookieKeyMessageErrorNewPost = "error_message_new_post"
+	cookieKeyMessageErrorHome = "error_message_home"
 }
 
 func getLoggedUserID(cookie *scs.SessionManager, req *http.Request) int {
@@ -110,15 +112,28 @@ func ServeStaticAssets(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *RouteHandler) GetHomePage() http.HandlerFunc {
+	queries := s.Bucket.Queries
+	dbContext := s.Bucket.DBContext
 	sessionManager := s.Cookie
 
 	return func(w http.ResponseWriter, req *http.Request) {
+		req.ParseForm()
+
 		basePath := views.PathStaticFiles
 
 		pathToSqueletonPage := views.PathToSqueletonPage
 		pathToHomeContent := filepath.Join(basePath, "index.html")
+		pathToComponentPage := views.PathToComponentPage
 
-		tmpl, err := template.ParseFiles(pathToSqueletonPage, pathToHomeContent)
+		entryName := views.NameSqueletonPage
+		tmpl := template.New(entryName)
+
+		tmpl.Funcs(map[string]interface{}{
+			"dict": views.CreateDictionaryFuncTemplate,
+		})
+
+		tmpl, err := tmpl.ParseFiles(pathToSqueletonPage, pathToHomeContent, pathToComponentPage)
+		// tmpl, err := template.ParseFiles(pathToSqueletonPage, pathToHomeContent, pathToComponentPage)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
 			message += "Error parsing html/template file -- " + err.Error()
@@ -128,9 +143,36 @@ func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 			return
 		}
 
+		// TODO: Implement Search features
+		searchText := req.FormValue("search")
+		searchText = "%" + searchText + "%"
+		searchParam := database.SearchPostsParams{
+			Code:    searchText,
+			Comment: searchText,
+		}
+
+		log.Printf("SearchParam: %#v", searchParam)
+
+		posts, err := queries.SearchPosts(*dbContext, searchParam)
+
 		// TODO:  Fetch Posts with Search and Without search
+		// posts, err := queries.GetRecentPosts(*dbContext)
+		if err != nil {
+			message := "[" + req.URL.Path + "] "
+			message += "Error while fetch recent posts from DB -- " + err.Error()
+			log.Println(message)
+
+			message = "Error while fetching recents posts"
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorHome, message)
+			posts = []database.SearchPostsRow{}
+			// posts = []database.GetRecentPostsRow{}
+		}
 
 		data := map[string]interface{}{}
+		data["Posts"] = posts
+		data["CodeLanguages"] = storage.CodeLanguages
+		data["OriginalPost"] = views.Post{}
+
 		data = setUserDataForTemplateEngine(data, sessionManager, req)
 
 		err = tmpl.Execute(w, data)
@@ -166,6 +208,7 @@ func (s *RouteHandler) GetNewPostPage() http.HandlerFunc {
 			message += "Error parsing html/template file -- " + err.Error()
 
 			log.Println(message)
+			// TODO: Send message to user instead of nuking the app
 			http.Error(w, message, http.StatusInternalServerError)
 			return
 		}
@@ -230,6 +273,7 @@ func (s *RouteHandler) SavePost() http.HandlerFunc {
 		}
 
 		userID := sessionManager.GetInt(req.Context(), cookieKeyUserID)
+		log.Println("userID = ", userID)
 
 		input := database.AddPostParams{
 			Code:       req.FormValue("code"),
@@ -522,7 +566,9 @@ func (s *RouteHandler) LoginUser() http.HandlerFunc {
 			return
 		}
 
-		sessionManager.Put(req.Context(), cookieKeyUserID, userLogged.UserID)
+		log.Printf("user logged : %#v\n", userLogged)
+
+		sessionManager.Put(req.Context(), cookieKeyUserID, int(userLogged.UserID))
 		sessionManager.Put(req.Context(), cookieKeyUserName, userLogged.Username)
 		sessionManager.Put(req.Context(), cookieKeyUserEmail, userLogged.Email)
 

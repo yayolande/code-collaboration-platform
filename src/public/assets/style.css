@@ -10,8 +10,12 @@ body {
 }
 
 header {
-  padding: 10px 20px;
+  padding: 0 20px;
   border-bottom: 1px solid grey;
+}
+
+header .navbar {
+  height: 75px;
 }
 
 .content-width {
@@ -63,4 +67,64 @@ section {
   margin-top: 20px;
   padding: 30px;
   border: 1px solid grey;
+}
+
+.card-box {
+  color: #333;
+  display: block;
+  border: 1px solid #dedfdf;
+  border-radius: 8px;
+  padding: 5px 15px;
+  margin-bottom: 40px;
+}
+
+.card-box:hover {
+  border-color: blueviolet;
+  box-shadow: 1px 3px 8px rgba(138, 43, 226, .12);
+}
+
+.card-top {
+  display: flex;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  /* gap: 50px; */
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-top__comment {
+  /* flex: 1; */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-weight: bold;
+}
+
+.card-top__lang {
+  /* padding-left: 40px; */
+  min-width: 100px;
+  text-align: right;
+  padding: 0 20px;
+}
+
+.card__middle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.card-bottom {
+  color: #888;
+  font-weight: bold;
+  font-style: italic;
+  margin-top: 15px;
+}
+
+.username-poster {
+  font-weight: bold;
+  margin-top: 10px;
+  text-align: right;
+  font-size: 1.2em;
 }

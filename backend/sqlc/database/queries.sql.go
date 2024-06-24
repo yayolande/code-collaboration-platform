@@ -98,10 +98,11 @@ func (q *Queries) AddUser(ctx context.Context, arg AddUserParams) (User, error) 
 const getPostsFromRoot = `-- name: GetPostsFromRoot :many
 ;
 
-SELECT t.post_id, parent_post_id, p.post_id, user_id, language_id, code, comment, post_date FROM posts_tree t 
-   INNER JOIN posts p ON t.post_id = p.post_id 
-   WHERE t.post_id = ? OR t.parent_post_id = ?
-   ORDER BY t.parent_post_id ASC
+SELECT t.post_id, parent_post_id, p.post_id, p.user_id, language_id, code, comment, post_date, u.user_id, username, password, email, status FROM posts_tree t 
+  INNER JOIN posts p ON t.post_id = p.post_id 
+  INNER JOIN users u ON u.user_id = p.user_id
+  WHERE t.post_id = ? OR t.parent_post_id = ?
+  ORDER BY t.parent_post_id ASC
 `
 
 type GetPostsFromRootParams struct {
@@ -118,6 +119,11 @@ type GetPostsFromRootRow struct {
 	Code         string
 	Comment      string
 	PostDate     string
+	UserID_2     int64
+	Username     string
+	Password     string
+	Email        string
+	Status       int64
 }
 
 func (q *Queries) GetPostsFromRoot(ctx context.Context, arg GetPostsFromRootParams) ([]GetPostsFromRootRow, error) {
@@ -138,6 +144,77 @@ func (q *Queries) GetPostsFromRoot(ctx context.Context, arg GetPostsFromRootPara
 			&i.Code,
 			&i.Comment,
 			&i.PostDate,
+			&i.UserID_2,
+			&i.Username,
+			&i.Password,
+			&i.Email,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRecentPosts = `-- name: GetRecentPosts :many
+;
+  /* Later on, the post should also return the user info (username, user_id) */
+  /* INNER JOIN users u ON u.user_id = p.user_id */
+
+SELECT t.post_id, parent_post_id, p.post_id, p.user_id, language_id, code, comment, post_date, u.user_id, username, password, email, status FROM posts_tree t 
+  INNER JOIN posts p ON t.post_id = p.post_id 
+  INNER JOIN users u ON u.user_id = p.user_id
+  WHERE t.parent_post_id = -1
+  ORDER BY p.post_id DESC 
+  LIMIT 20
+`
+
+type GetRecentPostsRow struct {
+	PostID       int64
+	ParentPostID int64
+	PostID_2     int64
+	UserID       int64
+	LanguageID   int64
+	Code         string
+	Comment      string
+	PostDate     string
+	UserID_2     int64
+	Username     string
+	Password     string
+	Email        string
+	Status       int64
+}
+
+func (q *Queries) GetRecentPosts(ctx context.Context) ([]GetRecentPostsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRecentPosts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRecentPostsRow
+	for rows.Next() {
+		var i GetRecentPostsRow
+		if err := rows.Scan(
+			&i.PostID,
+			&i.ParentPostID,
+			&i.PostID_2,
+			&i.UserID,
+			&i.LanguageID,
+			&i.Code,
+			&i.Comment,
+			&i.PostDate,
+			&i.UserID_2,
+			&i.Username,
+			&i.Password,
+			&i.Email,
+			&i.Status,
 		); err != nil {
 			return nil, err
 		}
@@ -209,4 +286,80 @@ func (q *Queries) LoginUser(ctx context.Context, arg LoginUserParams) (User, err
 		&i.Status,
 	)
 	return i, err
+}
+
+const searchPosts = `-- name: SearchPosts :many
+;
+
+SELECT found_post_id, post_id, p.user_id, language_id, code, comment, post_date, u.user_id, username, password, email, status 
+  FROM (
+    SELECT
+      CASE parent_post_id
+      WHEN -1 THEN post_id
+      ELSE parent_post_id
+      END found_post_id
+    FROM posts_tree
+    GROUP BY found_post_id
+  ) t
+  INNER JOIN posts p ON p.post_id = t.found_post_id
+  INNER JOIN users u ON u.user_id = p.user_id
+  WHERE p.code LIKE ? OR p.comment LIKE ?
+  ORDER BY t.found_post_id DESC 
+  LIMIT 20
+`
+
+type SearchPostsParams struct {
+	Code    string
+	Comment string
+}
+
+type SearchPostsRow struct {
+	FoundPostID interface{}
+	PostID      int64
+	UserID      int64
+	LanguageID  int64
+	Code        string
+	Comment     string
+	PostDate    string
+	UserID_2    int64
+	Username    string
+	Password    string
+	Email       string
+	Status      int64
+}
+
+func (q *Queries) SearchPosts(ctx context.Context, arg SearchPostsParams) ([]SearchPostsRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchPosts, arg.Code, arg.Comment)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchPostsRow
+	for rows.Next() {
+		var i SearchPostsRow
+		if err := rows.Scan(
+			&i.FoundPostID,
+			&i.PostID,
+			&i.UserID,
+			&i.LanguageID,
+			&i.Code,
+			&i.Comment,
+			&i.PostDate,
+			&i.UserID_2,
+			&i.Username,
+			&i.Password,
+			&i.Email,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

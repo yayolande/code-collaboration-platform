@@ -40,13 +40,10 @@ type PostTree struct {
 }
 
 func (p *Post) New(row database.GetPostsFromRootRow) {
-	//
-	// WARNING: Username not filled properly for now, change it later when 'users' table operational
-	//
 	lang, _ := storage.GetLanguageDetailsFromID(int(row.LanguageID))
 
 	p.PostID = int(row.PostID)
-	p.Username = "PLACEHOLDER_NAME"
+	p.Username = row.Username
 	p.CodeSnipet = row.Code
 	p.LanguageCode = lang.Code
 	p.Comment = row.Comment
