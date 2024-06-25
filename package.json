@@ -28,6 +28,7 @@
     "@codemirror/search": "^6.5.6",
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.26.3",
-    "codemirror": "^6.0.1"
+    "codemirror": "^6.0.1",
+    "thememirror": "^2.0.1"
   }
 }

@@ -26,7 +26,7 @@
 {{ define "user-post" }}
   {{ with .Post }}
   <div id="user-post__{{ .PostID }}" class="original-poster">
-    <div class="code-editor">
+    <div class="code-editor ͼ3z">
       <div class="code-editor__header">
         <div class="select is-link">
           <select name="language" data-id-post="{{ .PostID }}">
@@ -43,10 +43,16 @@
 
     <div class="comment">
       <textarea class="textarea" name="comment" class="comment__body">
-        {{- .Comment }}
-        {{ .Username -}}
+        {{- .Comment -}}
       </textarea>
     </div>
+
+    {{ if .Username }}
+    <div class="username-poster">
+      @ {{ .Username }}
+    </div>
+    {{ end }}
+
   </div>
   {{ end }}
 {{ end }}
@@ -63,13 +69,14 @@
       {{ $parentPostID = $originalPost.PostID }}
     {{ end }}
 
-    <p>Form here</p>
-    <input name="username" value="my name is steven" />
 
-    <input name="code" value="DEFAULT CODE HERE !!!" hidden />
-    <input name="parent_post_id" value="{{ $parentPostID }}" hidden />
+    <div>
+      <textarea name="code" value="DEFAULT CODE HERE !!!" style="display: none;">
+      </textarea>
+      <input name="parent_post_id" value="{{ $parentPostID }}" hidden />
 
-    <input type="submit" value="Submission Button" />
+      <button type="submit" class="button column is-4 is-offset-4 is-primary mt-3">Create</button>
+    </div>
   </form>
 {{ end }}
 

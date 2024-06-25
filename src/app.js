@@ -5,6 +5,7 @@ import { syntaxHighlighting, indentOnInput, defaultHighlightStyle, bracketMatchi
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { highlightSelectionMatches } from '@codemirror/search'
 import { defaultKeymap, indentWithTab } from '@codemirror/commands'
+import { dracula, noctisLilac } from 'thememirror'
 
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
@@ -26,14 +27,15 @@ function createEditorState(codeContent, languageExtension) {
     codeContent = ""
   }
 
-  codeContent = codeContent.toString().replaceAll(",", "\n")
-
   let startState = EditorState.create({
     doc: codeContent,
     extensions: [
+      // dracula,
+      noctisLilac,
+      // EditorState.lineSeparator.of("\n"),
       lineNumbers(),
       drawSelection(),
-      // foldGutter(),
+      foldGutter(),
       // rectangularSelection(),
       highlightActiveLine(),
       highlightActiveLineGutter(),
@@ -66,6 +68,7 @@ function createEditorView(editorCanvas, startState) {
   })
 
   view.dom.style.minHeight = "300px"
+  view.dom.style.outline = "0"
 
   return view
 }
@@ -271,7 +274,7 @@ function conditionalInitialization(flags, views) {
     }
 
     let codeEditorLanguageElement = form.querySelector(".code-editor__header select")
-    let hiddenCodeInput = form.querySelector("input[name=code]")
+    let hiddenCodeInput = form.querySelector("textarea[name=code]")
 
     if (!codeEditorLanguageElement) {
       console.log("[Error] Unable to find language selector for code editor")
@@ -294,7 +297,7 @@ function conditionalInitialization(flags, views) {
 
     form.addEventListener("submit", function(_) {
       let codeContent = views[defaultPostID].state.doc
-      let codeContentFormated = codeContent.text.toString()
+      let codeContentFormated = codeContent.toString()
 
       hiddenCodeInput.value = codeContentFormated
     })
