@@ -283,12 +283,12 @@ func (s *RouteHandler) SavePost() http.HandlerFunc {
 			PostDate:   time.Now().String(),
 		}
 
-		if strings.Trim(input.Code, " \n") == "" {
+		if strings.Trim(input.Code, " \n") == "" || strings.Trim(input.Comment, " \n") == "" {
 			message := "[" + req.URL.Path + "] "
-			message += "Cannot save 'Post' with empty 'Code Snippet' !"
+			message += "Cannot save 'Post' with empty 'Code Snippet' or empty 'Comment' !"
 			log.Println(message)
 
-			message = "Cannot save 'Post' with empty 'Code Snippet' !"
+			message = "Cannot save 'Post' with empty 'Code Snippet' or comment !"
 			sessionManager.Put(req.Context(), cookieKeyMessageErrorNewPost, message)
 
 			nextUrl := previousUrl
@@ -423,10 +423,6 @@ func (s *RouteHandler) GetPostPage(urlParamName string) http.HandlerFunc {
 			ParentPostID: int64(snipetId),
 		}
 
-		//
-		// WARNING: The current implementation dont fetch the user info, since 'users' table not userd
-		// In the future, we should take it into consideration
-		//
 		posts, err := queries.GetPostsFromRoot(*dbContext, orginalPostParam)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
@@ -465,15 +461,6 @@ func (s *RouteHandler) GetPostPage(urlParamName string) http.HandlerFunc {
 		}
 
 		langs := storage.CodeLanguages
-
-		/*
-			postsFormated := views.PostTree{
-				EmptyPost:     views.Post{},
-				OriginalPost:  orginalPost,
-				AnswersPost:   answersPost,
-				CodeLanguages: langs[:],
-			}
-		*/
 
 		data := map[string]interface{}{}
 		data["EmptyPost"] = views.Post{}
