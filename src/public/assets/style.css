@@ -38,13 +38,18 @@ section {
 }
 
 .code-editor {
-  border: 1px solid grey;
-  border-radius: 3px;
+  border: 1px solid #dddee1;
+  border-radius: 8px;
+  padding: 0px 10px;
 }
 
 .code-editor__header {
-  border-bottom: 1px solid grey;
-  padding: 10px 20px;
+  border-bottom: 1px solid #d1d3d9;
+  padding: 8px 20px;
+}
+
+.code-editor__body {
+  font-size: 1.2rem;
 }
 
 .comment {
