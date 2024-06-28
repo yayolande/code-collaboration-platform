@@ -697,10 +697,10 @@ func (s *RouteHandler) Nohup() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {}
 }
 
-func (s *RouteHandler) UserOnly(fn http.HandlerFunc) http.HandlerFunc {
+func (s *RouteHandler) UserOnly(next http.Handler) http.Handler {
 	sessionManager := s.Cookie
 
-	return func(w http.ResponseWriter, req *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if !sessionManager.Exists(req.Context(), cookieKeyUserID) {
 			message := "[" + req.URL.Path + "] "
 			message += "Error, user not authenticated !"
@@ -714,6 +714,6 @@ func (s *RouteHandler) UserOnly(fn http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		fn(w, req)
-	}
+		next.ServeHTTP(w, req)
+	})
 }

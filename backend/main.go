@@ -90,7 +90,6 @@ func setupRoute(server *handlers.RouteHandler) {
 
 	router.Get("/assets/*", handlers.ServeStaticAssets)
 
-	router.Get("/", server.UserOnly(server.GetHomePage()))
 	router.Get("/login", server.GetLoginPage())
 	router.Post("/login", server.LoginUser())
 	router.Get("/logout", server.LogoutUser())
@@ -98,9 +97,19 @@ func setupRoute(server *handlers.RouteHandler) {
 	router.Get("/register", server.GetRegistrationPage())
 	router.Post("/register", server.RegisterUser())
 
+	router.Mount("/debug", middleware.Profiler())
+
+	router.Group(func(r chi.Router) {
+		r.Use(server.UserOnly)
+
+		r.Get("/", (server.GetHomePage()))
+	})
+
 	router.Route("/code/", func(r chi.Router) {
-		r.Get("/new", server.UserOnly(server.GetNewPostPage()))
-		r.Post("/new", server.UserOnly(server.SavePost()))
+		r.Use(server.UserOnly)
+
+		r.Get("/new", server.GetNewPostPage())
+		r.Post("/new", server.SavePost())
 
 		r.Get("/{snippet_id}", server.GetPostPage("snippet_id"))
 
