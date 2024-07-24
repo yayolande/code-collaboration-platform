@@ -1,0 +1,4 @@
+name = "Online Code Platform Server"
+root_serve_file = "../dist/"
+port = 3500
+address = ""

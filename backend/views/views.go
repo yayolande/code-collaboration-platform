@@ -69,3 +69,8 @@ func CreateDictionaryFuncTemplate(v ...interface{}) map[string]interface{} {
 
 	return dict
 }
+
+func SetPathToStaticFiles(staticDirectory string) {
+	path, _ := os.Getwd()
+	PathStaticFiles = filepath.Join(path, staticDirectory)
+}

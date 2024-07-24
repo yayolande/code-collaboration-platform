@@ -16,6 +16,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/lesismal/nbio/nbhttp/websocket"
 )
 
 type DatabaseBucket struct {
@@ -25,9 +26,11 @@ type DatabaseBucket struct {
 }
 
 type RouteHandler struct {
-	Router *chi.Mux
-	Bucket *DatabaseBucket
-	Cookie *scs.SessionManager
+	Router            *chi.Mux
+	Bucket            *DatabaseBucket
+	Cookie            *scs.SessionManager
+	WebSocketUpgrader *websocket.Upgrader
+	ConnectedClients  *map[*websocket.Conn]bool
 }
 
 func NewRouteHandler() *RouteHandler {
@@ -111,6 +114,25 @@ func ServeStaticAssets(w http.ResponseWriter, req *http.Request) {
 	fs.ServeHTTP(w, req)
 }
 
+func (s *RouteHandler) GetEditorWebSocket() http.HandlerFunc {
+	upgrader := s.WebSocketUpgrader
+
+	return func(w http.ResponseWriter, req *http.Request) {
+		conn, err := upgrader.Upgrade(w, req, nil)
+		if err != nil {
+			log.Println("[Error] Unable to establish WS connection : ", err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+
+			return
+		}
+
+		readTimeout := 6 * time.Minute
+		conn.SetReadDeadline(time.Now().Add(readTimeout))
+
+		log.Println("WebSocket Enabled (http --> ws)")
+	}
+}
+
 func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 	queries := s.Bucket.Queries
 	dbContext := s.Bucket.DBContext
@@ -175,6 +197,7 @@ func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 
 		data = setUserDataForTemplateEngine(data, sessionManager, req)
 
+		w.Header().Add("Content-Type", "text/html")
 		err = tmpl.Execute(w, data)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
@@ -226,6 +249,7 @@ func (s *RouteHandler) GetNewPostPage() http.HandlerFunc {
 
 		data = setUserDataForTemplateEngine(data, sessionManager, req)
 
+		w.Header().Add("Content-Type", "text/html")
 		err = tmpl.Execute(w, data)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
@@ -470,6 +494,7 @@ func (s *RouteHandler) GetPostPage(urlParamName string) http.HandlerFunc {
 
 		data = setUserDataForTemplateEngine(data, sessionManager, req)
 
+		w.Header().Add("Content-Type", "text/html")
 		err = tmpl.Execute(w, data)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
@@ -509,6 +534,7 @@ func (s *RouteHandler) GetLoginPage() http.HandlerFunc {
 			"success_message_registration": messageSuccess,
 		}
 
+		w.Header().Add("Content-Type", "text/html")
 		err = tmpl.Execute(w, data)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
@@ -607,6 +633,7 @@ func (s *RouteHandler) GetRegistrationPage() http.HandlerFunc {
 			"error_message_registration": msg,
 		}
 
+		w.Header().Add("Content-Type", "text/html")
 		err = tmpl.Execute(w, data)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
@@ -691,10 +718,6 @@ func (s *RouteHandler) RegisterUser() http.HandlerFunc {
 		nextUrl := "/login"
 		http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 	}
-}
-
-func (s *RouteHandler) Nohup() http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {}
 }
 
 func (s *RouteHandler) UserOnly(next http.Handler) http.Handler {
