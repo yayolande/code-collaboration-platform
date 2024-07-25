@@ -42,7 +42,7 @@
         </div>
 
         <div class="navbar-end">
-          <a class="navbar-item">Playground</a>
+          <a href="/play/" class="navbar-item">Playground</a>
           <a href="/code/new" class="navbar-item">Create</a>
 
           {{ if .user_id }}
@@ -52,7 +52,7 @@
           </a>
           {{ else }}
           <a href="/login" class="navbar-item ml-6">
-            <button class="button is-primary">Login</button>
+            <button class="button is-primary has-text-white">Login</button>
           </a>
           {{ end }}
         </div>

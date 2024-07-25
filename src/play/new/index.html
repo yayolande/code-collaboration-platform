@@ -1,0 +1,18 @@
+{{ define "main" }}
+  <div class="box container section">
+    {{- $post := dict "Post" .EmptyPost "Lang" .CodeLanguages -}}
+
+    {{ with $post.Post }}
+    <div id="user-post__{{ .PostID }}" class="original-poster">
+      {{ template "code-editor" $post }}
+
+    </div>
+    {{ end }}
+  </div>
+{{ end }}
+
+{{ define "custom_data_js" }}
+  <script>
+    GLOBAL_FLAGS.isCreatePostElement = true
+  </script>
+{{ end }}

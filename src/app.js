@@ -1,11 +1,11 @@
 
-import { lineNumbers, drawSelection, rectangularSelection, highlightActiveLine, crosshairCursor } from '@codemirror/view'
+import { lineNumbers, drawSelection, highlightActiveLine } from '@codemirror/view'
 import { keymap, dropCursor, highlightActiveLineGutter, highlightSpecialChars } from '@codemirror/view'
 import { syntaxHighlighting, indentOnInput, defaultHighlightStyle, bracketMatching, foldGutter } from '@codemirror/language'
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { highlightSelectionMatches } from '@codemirror/search'
 import { defaultKeymap, indentWithTab } from '@codemirror/commands'
-import { dracula, noctisLilac } from 'thememirror'
+import { noctisLilac } from 'thememirror'
 
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'

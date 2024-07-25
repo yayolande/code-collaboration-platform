@@ -1,45 +1,25 @@
-{{ define "header" }}
-<header>
-  <div class="nav-bar">
-    <div class="nav-bar__logo">
-      Snipet Coder
+{{ define "code-editor" }}
+  <div class="code-editor ͼ3z">
+    <div class="code-editor__header">
+      <div class="select is-link">
+        {{ $postID := .Post.PostID }}
+        <select name="language" data-id-post="{{ $postID }}">
+        {{- range .Lang }}
+          <option value="{{ .Code }}">{{ .Label }}</option>
+        {{- end }}
+        </select>
+      </div>
     </div>
 
-    <div>
-      <input />
+    <div class="code-editor__body">
     </div>
-
-    <nav>
-      <a>Playground</a>
-      <a>Snipet</a>
-    </nav>
   </div>
-</header>
-{{ end }}
-
-{{ define "footer" }}
-<footer>
-  <p>Made By <strong>Steve Djumo</strong></p>
-</footer>
 {{ end }}
 
 {{ define "user-post" }}
   {{ with .Post }}
   <div id="user-post__{{ .PostID }}" class="original-poster">
-    <div class="code-editor ͼ3z">
-      <div class="code-editor__header">
-        <div class="select is-link">
-          <select name="language" data-id-post="{{ .PostID }}">
-          {{- range $.Lang }}
-            <option value="{{ .Code }}">{{ .Label }}</option>
-          {{- end }}
-          </select>
-        </div>
-      </div>
-
-      <div class="code-editor__body">
-      </div>
-    </div>
+    {{ template "code-editor" $ }}
 
     <div class="comment">
       <textarea class="textarea" name="comment" class="comment__body">
@@ -92,68 +72,3 @@
 </script>
 {{ end }}
 
-{{ define "style" }}
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-size: 16px;
-    }
-
-    header {
-      padding: 20px 40px;
-      border-bottom: 1px solid grey;
-    }
-
-    .content-width {
-      max-width: 768px;
-      margin: 0 auto;
-    }
-
-    .nav-bar {
-      display: flex;
-      justify-content: space-between;
-    }
-
-    section {
-      padding: 30px 50px;
-    }
-
-    .original-poster {
-      padding: 20px 30px;
-      border-bottom: 1px solid grey;
-    }
-
-    .code-editor {
-      border: 1px solid grey;
-      border-radius: 3px;
-    }
-
-    .code-editor__header {
-      border-bottom: 1px solid grey;
-      padding: 10px 20px;
-    }
-
-    .comment {
-      margin-top: 30px;
-    }
-
-    .comment__body {
-      outline: 0;
-      min-width: 100%;
-      box-sizing: border-box;
-      border-radius: 3px;
-      border: none;
-      border-bottom: 1px solid grey;
-      background: #f0f0f0;
-      padding: 10px 20px;
-      height: 100px;
-    }
-
-    .people-answers {
-      margin-top: 20px;
-      padding: 30px;
-      border: 1px solid grey;
-    }
-  </style>
-{{ end }}

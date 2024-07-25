@@ -32,11 +32,6 @@ section {
   padding: 30px 50px;
 }
 
-.original-poster {
-  padding: 20px 30px;
-  border-bottom: 1px solid grey;
-}
-
 .code-editor {
   border: 1px solid #dddee1;
   border-radius: 8px;

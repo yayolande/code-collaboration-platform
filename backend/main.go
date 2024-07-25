@@ -251,6 +251,11 @@ func setupRoute(server *handlers.RouteHandler) {
 		r.Post("/new", server.SavePost())
 
 		r.Get("/{snippet_id}", server.GetPostPage("snippet_id"))
+	})
+
+	router.Route("/play", func(r chi.Router) {
+		r.Get("/", server.GetPlaygroundListingPage())
+		r.Get("/new", server.GetPlaygroundPage())
 
 		r.Get("/ws", server.GetEditorWebSocket())
 	})

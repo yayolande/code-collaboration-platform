@@ -466,9 +466,6 @@ func (s *RouteHandler) GetPostPage(urlParamName string) http.HandlerFunc {
 			postsConverted = append(postsConverted, tmp)
 		}
 
-		orginalPost := views.Post{}
-		answersPost := []views.Post{}
-
 		if len(postsConverted) <= 0 {
 			message := "[" + req.URL.Path + "] "
 			message += "No Post Found"
@@ -478,6 +475,8 @@ func (s *RouteHandler) GetPostPage(urlParamName string) http.HandlerFunc {
 			return
 		}
 
+		answersPost := []views.Post{}
+		orginalPost := views.Post{}
 		orginalPost = postsConverted[0]
 
 		if len(postsConverted) > 1 {
@@ -718,6 +717,85 @@ func (s *RouteHandler) RegisterUser() http.HandlerFunc {
 		nextUrl := "/login"
 		http.Redirect(w, req, nextUrl, http.StatusSeeOther)
 	}
+}
+
+func (s *RouteHandler) GetPlaygroundListingPage() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		pathToSqueletonPage := views.PathToSqueletonPage
+		pathToPlaygroundContent := filepath.Join(views.PathStaticFiles, "play", "index.html")
+
+		tmpl, err := template.ParseFiles(pathToSqueletonPage, pathToPlaygroundContent)
+		if err != nil {
+			message := "[" + req.URL.Path + "] "
+			message += "Error while parsing 'Playground List Page' template -- " + err.Error()
+			log.Println(message)
+
+			http.Error(w, message, http.StatusInternalServerError)
+			return
+		}
+
+		data := make(map[string]interface{})
+
+		w.Header().Add("Content-Type", "text/html")
+		err = tmpl.Execute(w, data)
+		if err != nil {
+			message := "[" + req.URL.Path + "] "
+			message += "Error while Executing 'Playground List Page' template -- " + err.Error()
+			log.Println(message)
+
+			http.Error(w, message, http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func (s *RouteHandler) GetPlaygroundPage() http.HandlerFunc {
+	sessionManager := s.Cookie
+
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		pathToComponentPage := views.PathToComponentPage
+		pathToSqueletonPage := views.PathToSqueletonPage
+		pathToPlaygroundContent := filepath.Join(views.PathStaticFiles, "play", "new", "index.html")
+
+		entryName := views.NameSqueletonPage
+		tmpl := template.New(entryName)
+
+		tmpl.Funcs(map[string]interface{}{
+			"dict": views.CreateDictionaryFuncTemplate,
+		})
+
+		tmpl, err := tmpl.ParseFiles(pathToSqueletonPage, pathToPlaygroundContent, pathToComponentPage)
+		if err != nil {
+			message := "[" + req.URL.Path + "] "
+			message += "Error while parsing the template file -- " + err.Error()
+			log.Println(message)
+
+			http.Error(w, message, http.StatusInternalServerError)
+			return
+
+		}
+
+		langs := storage.CodeLanguages
+
+		data := make(map[string]interface{})
+		data["EmptyPost"] = views.Post{}
+		data["OriginalPost"] = views.Post{}
+		data["AnswersPost"] = []views.Post{}
+		data["CodeLanguages"] = langs[:]
+
+		data = setUserDataForTemplateEngine(data, sessionManager, req)
+
+		w.Header().Add("Content-Type", "text/html")
+		err = tmpl.Execute(w, data)
+		if err != nil {
+			message := "[" + req.URL.Path + "] "
+			message += "Error while executing the template -- " + err.Error()
+			log.Println(message)
+
+			http.Error(w, message, http.StatusInternalServerError)
+			return
+		}
+	})
 }
 
 func (s *RouteHandler) UserOnly(next http.Handler) http.Handler {

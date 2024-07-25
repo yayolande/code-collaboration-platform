@@ -17,6 +17,8 @@ export default defineConfig({
         post: "./src/post/index.html",
         new_post: "./src/new/index.html",
         partial: "./src/partial.html",
+        play_list: "./src/play/index.html",
+        play: "./src/play/new/index.html",
         // style: "./src/assets/style.css",
         // assets: "./src/assets/",
         app: "src/app.js"
