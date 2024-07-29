@@ -29,6 +29,9 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.26.3",
     "codemirror": "^6.0.1",
-    "thememirror": "^2.0.1"
+    "thememirror": "^2.0.1",
+    "y-codemirror.next": "^0.3.5",
+    "y-websocket": "^2.0.4",
+    "yjs": "^13.6.18"
   }
 }

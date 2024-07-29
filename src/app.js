@@ -18,6 +18,10 @@ import { php } from '@codemirror/lang-php'
 import { html } from '@codemirror/lang-html'
 import { sql } from '@codemirror/lang-sql'
 
+import * as Y from 'yjs'
+import { yCollab, yUndoManagerKeymap } from 'y-codemirror.next'
+import { WebsocketProvider } from 'y-websocket'
+
 function createEditorState(codeContent, languageExtension) {
   if (!languageExtension) {
     languageExtension = () => []
@@ -26,6 +30,18 @@ function createEditorState(codeContent, languageExtension) {
   if (!codeContent) {
     codeContent = ""
   }
+
+  const websocketUrl = "ws://localhost:3500/play"
+
+  const ydoc = new Y.Doc()
+  const provider = new WebsocketProvider(websocketUrl, 'ws', ydoc)
+  provider.awareness.setLocalStateField('user', {
+    name: 'user_unknown',
+    color: '#eeeeff',
+  })
+
+  let sharedContent = ydoc.getText('code-editor')
+  sharedContent.insert(0, codeContent)
 
   let startState = EditorState.create({
     doc: codeContent,
@@ -51,8 +67,10 @@ function createEditorState(codeContent, languageExtension) {
       keymap.of([
         ...defaultKeymap,
         indentWithTab,
+        ...yUndoManagerKeymap,
       ]),
       languageExtension(),
+      yCollab(sharedContent, provider.awareness)
     ],
   })
 
