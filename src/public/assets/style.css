@@ -14,18 +14,30 @@ header {
   border-bottom: 1px solid grey;
 }
 
-header .navbar {
-  height: 75px;
+@media screen and (min-width: 770px) {
+  header .navbar {
+    height: 75px;
+  }
+}
+
+@media screen and (max-width: 769px) {
+  header .navbar {
+    padding: 8px 0;
+  }
+}
+
+@font-face {
+  font-family: 'retro';
+  src: url(./Silkscreen-Bold.ttf);
+}
+
+header .navbar-brand .navbar-item {
+  font-family: 'retro';
 }
 
 .content-width {
   max-width: 768px;
   margin: 0 auto;
-}
-
-.nav-bar {
-  display: flex;
-  justify-content: space-between;
 }
 
 section {

@@ -11,6 +11,23 @@
   <link href="/assets/bulma.min.css" rel="stylesheet" />
   <link href="/assets/bulma-no-dark-mode.min.css" rel="stylesheet" />
 
+  <script>
+    // Toggle navbar on/off on mobile platform
+    document.addEventListener('DOMContentLoaded', () => {
+      let burgerButton = document.getElementsByClassName("navbar-burger")[0]
+
+      burgerButton.addEventListener('click', () => {
+        console.log('hello from clicking burger button')
+
+        let targetId = burgerButton.dataset.target
+        let navMenu = document.getElementById(targetId)
+
+        burgerButton.classList.toggle('is-active')
+        navMenu.classList.toggle('is-active')
+      })
+    })
+  </script>
+
   {{ if .OriginalPost }}
   <script>
     let app = {}
@@ -36,10 +53,17 @@
   <header class="has-background-white">
     <div class="navbar">
       <div class="navbar-brand">
-        <a href="/" class="navbar-item">Snippet Coder</a>
+        <a href="/" class="navbar-item"><strong>Snippet Coder</strong></a>
+
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbar-menu-top">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
       </div>
 
-      <nav class="navbar-menu">
+      <nav id="navbar-menu-top" class="navbar-menu">
         <div class="navbar-start">
           <a href="https://github.com/yayolande/code-collaboration-platform" class="navbar-item"
             target="_blank">Github</a>
@@ -47,10 +71,10 @@
 
         <div class="navbar-end">
           <a href="/play/" class="navbar-item">Playground</a>
-          <a href="/code/new" class="navbar-item">Create</a>
+          <a href="/code/new" class="navbar-item mr-6">Create</a>
 
           {{ if .user_id }}
-          <a href="#" class="navbar-item ml-6"><strong>{{ .user_name }}</strong></a>
+          <a href="#" class="navbar-item"><strong>{{ .user_name }}</strong></a>
           <a href="/logout" class="navbar-item">
             <button class="button is-danger has-text-light">Logout</button>
           </a>
