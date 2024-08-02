@@ -16,12 +16,14 @@ Second, programmers can do live programming with the integrated web editor
 - [x] User Login and integration with 'posts' table (DB)
 - [x] Fronted Styling
 - [x] Remove backup files from 'src/post/' and 'src/new/'
-- [ ] Replace 'codemirror' by 'highlight.js' for read only post (better user experience)
+- [ ] ~~Replace 'codemirror' by 'highlight.js' for read only post (better user experience)~~
 - [ ] LSP integration (LSP server on backend and [LSP client on fronted](https://github.com/furqansoftware/codemirror-languageserver]))
 - [x] Allow user to change server behavior through config file (toml), eg. changing the root of the file directory (for now it is '../dist/')
 - [ ] Playground editor that will send the code to server for compilation, and server respond with compilation result
-- [ ] Live coding collaboraition (pair programming)(eg. multi user edit in Google Doc)
+- [x] Live coding collaboraition (pair programming)(eg. multi user edit in Google Doc)
 - [ ] File system or code space eg. give root directory to user so that they can create files and folders themselves as if they where on the own file system (github workspace)
+- [ ] Multi-files code editor similar to [svelte tutorial](https://learn.svelte.dev/tutorial/media-elements). Luckily enough, the [source code](https://github.com/sveltejs/learn.svelte.dev) is available.
+- [ ] Show comment count for a post on the list of post available
 
 ## How to contribute
 
