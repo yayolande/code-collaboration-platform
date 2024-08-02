@@ -13,12 +13,16 @@
 
   {{ if .OriginalPost }}
   <script>
-    const GLOBAL_DATA_ORIGINAL_POSTER = {{ .OriginalPost}};
-    const GLOBAL_DATA_ANSWERS_POSTER = {{ .AnswersPost}};
-    const GLOBAL_DATA_EMPTY_POSTER = {{ .EmptyPost}};
-    const GLOBAL_FLAGS = {};
+    let app = {}
 
-    var GLOBAL_VIEWS = {}
+    app.originalPoster = {{ .OriginalPost }}
+    app.answersToPoster = {{ .AnswersPost }}
+    app.emptyPost = {{ .EmptyPost }}
+
+    app.flags = {}
+    app.views = {}
+
+    window.app = app
   </script>
 
   {{ template "custom_data_js" . }}
@@ -46,7 +50,7 @@
           <a href="/code/new" class="navbar-item">Create</a>
 
           {{ if .user_id }}
-          <a href="/profile" class="navbar-item ml-6"><strong>{{ .user_name }}</strong></a>
+          <a href="#" class="navbar-item ml-6"><strong>{{ .user_name }}</strong></a>
           <a href="/logout" class="navbar-item">
             <button class="button is-danger has-text-light">Logout</button>
           </a>
