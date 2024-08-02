@@ -66,12 +66,12 @@ func main() {
 
 	port := ":" + strconv.Itoa(config.Port)
 	/*
-				server := http.Server{
-					Addr:    port,
-					Handler: sessionManager.LoadAndSave(router),
-				}
+	   server := http.Server{
+	     Addr:    port,
+	     Handler: sessionManager.LoadAndSave(router),
+	   }
 
-		    defer server.Close()
+	   defer server.Close()
 	*/
 	engine := nbhttp.NewEngine(nbhttp.Config{
 		Network: "tcp",
@@ -186,7 +186,7 @@ func setupNewUpgrader(clients map[*websocket.Conn]bool) *websocket.Upgrader {
 		clients[conn] = true
 		mu.Unlock()
 
-		log.Printf("clients : %#v \n", clients)
+		// log.Printf("clients : %#v \n", clients)
 	})
 
 	upgrader.OnMessage(func(conn *websocket.Conn, mt websocket.MessageType, data []byte) {
@@ -194,6 +194,7 @@ func setupNewUpgrader(clients map[*websocket.Conn]bool) *websocket.Upgrader {
 
 		counter := 1
 
+		mu.Lock()
 		for client := range clients {
 			if client == conn {
 				continue
@@ -201,10 +202,11 @@ func setupNewUpgrader(clients map[*websocket.Conn]bool) *websocket.Upgrader {
 
 			client.WriteMessage(mt, data)
 			counter++
-			log.Printf("[client %d] %v ===> send data : %s", counter, client, string(data))
+			// log.Printf("[client %d] %v ===> send data : %s", counter, client, string(data))
 		}
+		mu.Unlock()
 
-		log.Printf("clients : %#v \n", clients)
+		// log.Printf("clients : %#v \n", clients)
 	})
 
 	upgrader.OnClose(func(conn *websocket.Conn, err error) {
@@ -212,9 +214,10 @@ func setupNewUpgrader(clients map[*websocket.Conn]bool) *websocket.Upgrader {
 
 		mu.Lock()
 		delete(clients, conn)
+
+		// log.Printf("clients : %#v \n", clients)
 		mu.Unlock()
 
-		log.Printf("clients : %#v \n", clients)
 		if err != nil {
 			log.Println("[Error] An unexpected error occured for ", conn, " : ", err.Error())
 			return
@@ -254,8 +257,8 @@ func setupRoute(server *handlers.RouteHandler) {
 	})
 
 	router.Route("/play", func(r chi.Router) {
-		r.Get("/", server.GetPlaygroundListingPage())
-		r.Get("/new", server.GetPlaygroundPage())
+		r.Get("/", server.GetPlaygroundPage())
+		r.Get("/experimental/list", server.GetPlaygroundListingPage())
 
 		r.Get("/ws", server.GetEditorWebSocket())
 	})

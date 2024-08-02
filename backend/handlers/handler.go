@@ -128,8 +128,6 @@ func (s *RouteHandler) GetEditorWebSocket() http.HandlerFunc {
 
 		readTimeout := 6 * time.Minute
 		conn.SetReadDeadline(time.Now().Add(readTimeout))
-
-		log.Println("WebSocket Enabled (http --> ws)")
 	}
 }
 
@@ -155,7 +153,6 @@ func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 		})
 
 		tmpl, err := tmpl.ParseFiles(pathToSqueletonPage, pathToHomeContent, pathToComponentPage)
-		// tmpl, err := template.ParseFiles(pathToSqueletonPage, pathToHomeContent, pathToComponentPage)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
 			message += "Error parsing html/template file -- " + err.Error()
@@ -165,7 +162,6 @@ func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 			return
 		}
 
-		// TODO: Implement Search features
 		searchText := req.FormValue("search")
 		searchText = "%" + searchText + "%"
 		searchParam := database.SearchPostsParams{
@@ -177,8 +173,6 @@ func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 
 		posts, err := queries.SearchPosts(*dbContext, searchParam)
 
-		// TODO:  Fetch Posts with Search and Without search
-		// posts, err := queries.GetRecentPosts(*dbContext)
 		if err != nil {
 			message := "[" + req.URL.Path + "] "
 			message += "Error while fetch recent posts from DB -- " + err.Error()
@@ -187,7 +181,6 @@ func (s *RouteHandler) GetHomePage() http.HandlerFunc {
 			message = "Error while fetching recents posts"
 			sessionManager.Put(req.Context(), cookieKeyMessageErrorHome, message)
 			posts = []database.SearchPostsRow{}
-			// posts = []database.GetRecentPostsRow{}
 		}
 
 		data := map[string]interface{}{}
@@ -231,7 +224,6 @@ func (s *RouteHandler) GetNewPostPage() http.HandlerFunc {
 			message += "Error parsing html/template file -- " + err.Error()
 
 			log.Println(message)
-			// TODO: Send message to user instead of nuking the app
 			http.Error(w, message, http.StatusInternalServerError)
 			return
 		}
@@ -280,21 +272,6 @@ func (s *RouteHandler) SavePost() http.HandlerFunc {
 
 		var formLangCode string = req.FormValue("language")
 		lang, _ := storage.GetLanguageDetailsFromCode(formLangCode)
-
-		// WARNING: Not sure this is the right place for user authentication
-		if !sessionManager.Exists(req.Context(), cookieKeyUserID) {
-			message := "[/" + req.Method + " " + req.URL.Path + "] "
-			message += "Error, User not logged to allow saving snippet into DB"
-
-			log.Println(message)
-
-			errorMessage := "Error, You are not a User! Unable to create Post"
-			sessionManager.Put(req.Context(), cookieKeyMessageErrorNewPost, errorMessage)
-
-			nextUrl := previousUrl
-			http.Redirect(w, req, nextUrl, http.StatusSeeOther)
-			return
-		}
 
 		userID := sessionManager.GetInt(req.Context(), cookieKeyUserID)
 		log.Println("userID = ", userID)
@@ -428,8 +405,6 @@ func (s *RouteHandler) GetPostPage(urlParamName string) http.HandlerFunc {
 			return
 		}
 
-		// TODO:
-		// GET User Posts ...
 		idParamString := chi.URLParam(req, urlParamName)
 		snipetId, err := strconv.Atoi(idParamString)
 
@@ -540,8 +515,11 @@ func (s *RouteHandler) GetLoginPage() http.HandlerFunc {
 			message += "Error while executing template -- " + err.Error()
 			log.Println(message)
 
-			sessionManager.Put(req.Context(), cookieKeyMessageErrorLogin, messageError)            // Save 'error_message_login' in order to display at least once the message to user
-			sessionManager.Put(req.Context(), cookieKeyMessageSuccessRegistration, messageSuccess) // Save 'success_message_registration' in order to display at least once the message to user
+			// Save 'error_message_login' in order to display at least once the message to user
+			sessionManager.Put(req.Context(), cookieKeyMessageErrorLogin, messageError)
+
+			// Save 'success_message_registration' in order to display at least once the message to user
+			sessionManager.Put(req.Context(), cookieKeyMessageSuccessRegistration, messageSuccess)
 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
