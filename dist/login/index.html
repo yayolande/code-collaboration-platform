@@ -1,0 +1,38 @@
+{{ define "main" }}
+
+{{ if .error_message_login }}
+<div class="box container column is-4 notification is-danger">
+  <p class="has-text-centered block"><strong class="has-text-light">{{ .error_message_login }}</strong></p>
+</div>
+{{ end }}
+
+{{ if .success_message_registration }}
+<div class="box container column is-4 notification is-success">
+  <p class="has-text-centered block"><strong class="has-text-light">{{ .success_message_registration }}</strong></p>
+</div>
+{{ end }}
+
+<form class="container box column is-4 section mt-6" method="post">
+  <h2 class="title has-text-centered mb-5">Login Page</h2>
+
+  <p class="block has-text-centered is-italic">Default user: <strong>kakam</strong> ; password: <strong>kakam</strong></p>
+
+  <div class="field">
+    <input class="input" name="username" placeholder="Username" value="kakam" />
+  </div>
+
+  <div class="field mb-6">
+    <input class="input" type="password" name="password" placeholder="Password" value="kakam" />
+  </div>
+
+  <button type="sumit" class="button is-fullwidth is-primary block">Login</button>
+  <p class="has-text-centered bloc">Not a user ? <a href="/register">Register Here</a></p>
+</form>
+
+{{ end }}
+
+{{ define "custom_data_js" }}
+<script>
+  const name = "Login";
+</script>
+{{ end}}

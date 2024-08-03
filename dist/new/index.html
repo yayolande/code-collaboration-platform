@@ -1,0 +1,32 @@
+{{ define "main" }}
+
+{{ if .error_message_new_post }}
+<div class="box container notification is-danger">
+  <p class="has-text-centered block"><strong class="has-text-light">{{ .error_message_new_post }}</strong></p>
+</div>
+{{ end }}
+
+<div class="box container section">
+  <h3 class="title has-text-centered">Create Post</h3>
+
+  <div class="content has-text-centered">
+    <p>If you have any issue while programming, you can <strong>create a new post</strong>. Upon completion, <strong>other users could respond</strong> and help you solve your issue</p>
+    <p>The code editor and the comment box musn't be empty to be able to create a new post</p>
+    <p></p>
+  </div>
+</div>
+
+<div class="box container section">
+  {{ template "user-post-form" . }}
+</div>
+
+{{ end }}
+
+
+{{ define "custom_data_js" }}
+
+<script>
+  window.app.flags.isCreatePostElement = true
+</script>
+
+{{ end }}

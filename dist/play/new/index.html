@@ -1,0 +1,28 @@
+{{ define "main" }}
+  <div class="box section container">
+    <h3 class="title has-text-centered">Instructions</h3>
+
+    <div class="content has-text-centered">
+      <p>This is editor allows <strong>live collaboration</strong> with remote <strong>users connected to this URL</strong></p>
+      <p>To test it, open this <a href="." target="_blank">link on another tab</a></p>
+    </div>
+  </div>
+
+  <div class="box container section">
+    {{- $post := dict "Post" .EmptyPost "Lang" .CodeLanguages -}}
+
+    {{ with $post.Post }}
+    <div id="user-post__{{ .PostID }}" class="original-poster">
+      {{ template "code-editor" $post }}
+
+    </div>
+    {{ end }}
+  </div>
+{{ end }}
+
+{{ define "custom_data_js" }}
+  <script>
+    // window.app.flags.isCreatePostElement = true
+    window.app.flags.isEnableCollab = true
+  </script>
+{{ end }}

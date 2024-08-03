@@ -1,0 +1,47 @@
+{{ define "main" }}
+
+<form class="box section container has-text-centered" method="get">
+  <h2 class="title mb-3">Search</h2>
+  <div class="field column is-4 is-offset-4">
+    <input class="input" name="search" placeholder="Search Posts ..." />
+  </div>
+  <button class="button has-text-centered is-link px-6" type="submit">Go !</button>
+</form>
+
+<div class="box section container">
+  <h2 class="title has-text-centered">Posts</h2>
+  {{- range .Posts -}}
+
+  {{ $comment := .Comment }}
+  {{ $code := .Code }}
+  {{ $lang := "NOT FOUND" }}
+  {{ $langID := .LanguageID }}
+  {{ $username := .Username }}
+
+  {{- range $.CodeLanguages -}}
+  {{ if eq .ID $langID }}
+  {{ $lang = .Label }}
+  {{ end }}
+  {{- end -}}
+
+  {{ $link := print "/code/" .PostID }}
+
+  <a href="{{ $link }}" class="card-box">
+    <div class="card-top">
+      <p class="card-top__comment is-size-5">{{ $comment }}</p>
+      <p class="card-top__lang tag is-medium">{{$lang}}</p>
+    </div>
+    <div class="card-middle has-text-grey">
+      {{ $code }}
+    </div>
+    <div class="card-bottom">
+      {{ $username }}
+    </div>
+  </a>
+  {{- end -}}
+</div>
+
+{{ end }}
+
+{{ define "custom_data_js" }}
+{{ end }}

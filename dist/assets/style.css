@@ -1,0 +1,142 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+header {
+  padding: 0 20px;
+  border-bottom: 1px solid grey;
+}
+
+@media screen and (min-width: 770px) {
+  header .navbar {
+    height: 75px;
+  }
+}
+
+@media screen and (max-width: 769px) {
+  header .navbar {
+    padding: 8px 0;
+  }
+}
+
+@font-face {
+  font-family: 'retro';
+  src: url(./Silkscreen-Bold.ttf);
+}
+
+header .navbar-brand .navbar-item {
+  font-family: 'retro';
+}
+
+.content-width {
+  max-width: 768px;
+  margin: 0 auto;
+}
+
+section {
+  padding: 30px 50px;
+}
+
+.code-editor {
+  border: 1px solid #dddee1;
+  border-radius: 8px;
+  padding: 0px 10px;
+}
+
+.code-editor__header {
+  border-bottom: 1px solid #d1d3d9;
+  padding: 8px 20px;
+}
+
+.code-editor__body {
+  font-size: 1.2rem;
+}
+
+.comment {
+  margin-top: 30px;
+}
+
+.comment__body {
+  outline: 0;
+  min-width: 100%;
+  box-sizing: border-box;
+  border-radius: 3px;
+  border: none;
+  border-bottom: 1px solid grey;
+  background: #f0f0f0;
+  padding: 10px 20px;
+  height: 100px;
+}
+
+.people-answers {
+  margin-top: 20px;
+  padding: 30px;
+  border: 1px solid grey;
+}
+
+.card-box {
+  color: #333;
+  display: block;
+  border: 1px solid #dedfdf;
+  border-radius: 8px;
+  padding: 5px 15px;
+  margin-bottom: 40px;
+}
+
+.card-box:hover {
+  border-color: blueviolet;
+  box-shadow: 1px 3px 8px rgba(138, 43, 226, .12);
+}
+
+.card-top {
+  display: flex;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  /* gap: 50px; */
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-top__comment {
+  /* flex: 1; */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-weight: bold;
+}
+
+.card-top__lang {
+  /* padding-left: 40px; */
+  min-width: 100px;
+  text-align: right;
+  padding: 0 20px;
+}
+
+.card__middle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.card-bottom {
+  color: #888;
+  font-weight: bold;
+  font-style: italic;
+  margin-top: 15px;
+}
+
+.username-poster {
+  font-weight: bold;
+  margin-top: 10px;
+  text-align: right;
+  font-size: 1.2em;
+}

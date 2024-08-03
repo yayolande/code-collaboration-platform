@@ -1,0 +1,74 @@
+{{ define "code-editor" }}
+  <div class="code-editor ͼ3z">
+    <div class="code-editor__header">
+      <div class="select is-link">
+        {{ $postID := .Post.PostID }}
+        <select name="language" data-id-post="{{ $postID }}">
+        {{- range .Lang }}
+          <option value="{{ .Code }}">{{ .Label }}</option>
+        {{- end }}
+        </select>
+      </div>
+    </div>
+
+    <div class="code-editor__body">
+    </div>
+  </div>
+{{ end }}
+
+{{ define "user-post" }}
+  {{ with .Post }}
+  <div id="user-post__{{ .PostID }}" class="original-poster">
+    {{ template "code-editor" $ }}
+
+    <div class="comment">
+      <textarea class="textarea" name="comment" class="comment__body">
+        {{- .Comment -}}
+      </textarea>
+    </div>
+
+    {{ if .Username }}
+    <div class="username-poster">
+      @ {{ .Username }}
+    </div>
+    {{ end }}
+
+  </div>
+  {{ end }}
+{{ end }}
+
+{{ define "user-post-form" }}
+  <form action="/code/new" method="post">
+    {{- $post := dict "Post" .EmptyPost "Lang" .CodeLanguages -}}
+    {{ template "user-post" $post }}
+
+    {{ $parentPostID := 0 }}
+
+    {{ $originalPost := .OriginalPost }}
+    {{ if $originalPost }}
+      {{ $parentPostID = $originalPost.PostID }}
+    {{ end }}
+
+
+    <div>
+      <textarea name="code" value="DEFAULT CODE HERE !!!" style="display: none;">
+      </textarea>
+      <input name="parent_post_id" value="{{ $parentPostID }}" hidden />
+
+      <button type="submit" class="button column is-4 is-offset-4 is-primary mt-3">Create</button>
+    </div>
+  </form>
+{{ end }}
+
+
+{{ define "global_var_js" }}
+<script>
+  const  GLOBAL_DATA_ORIGINAL_POSTER = {{.OriginalPost}};
+  const  GLOBAL_DATA_ANSWERS_POSTER = {{.AnswersPost}};
+  const  GLOBAL_DATA_EMPTY_POSTER = {{.EmptyPost}};
+  const  GLOBAL_FLAGS = {};
+
+  var GLOBAL_VIEWS = {}
+</script>
+{{ end }}
+

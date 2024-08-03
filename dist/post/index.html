@@ -1,0 +1,40 @@
+{{ define "main" }}
+
+{{- $originalPost := .OriginalPost -}}
+{{- $answersPost := .AnswersPost -}}
+{{- $codeLanguages := .CodeLanguages -}}
+
+<div class="box section container" method="post">
+  <h2 class="title has-text-centered">Post</h2>
+
+  {{- $post := dict "Post" $originalPost "Lang" $codeLanguages -}}
+
+  {{ template "user-post" $post }}
+</div>
+
+<div class="box section container">
+  <h3 class="title has-text-centered">Comments</h3>
+
+  {{- range $answersPost }}
+
+  {{- $post = dict "Post" . "Lang" $codeLanguages -}}
+  {{ template "user-post" $post }}
+
+  {{- end }}
+</div>
+
+<div class="box container section">
+  <h3 class="title has-text-centered">Give your feedback</h3>
+
+  {{ template "user-post-form" . }}
+</div>
+
+
+{{ end }}
+
+{{ define "custom_data_js" }}
+<script>
+  window.app.flags.isCreatePostElement = true
+</script>
+
+{{ end }}
