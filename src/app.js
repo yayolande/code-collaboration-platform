@@ -371,7 +371,11 @@ function conditionalInitialization(flags, views) {
     //
     // Enable users Collaboration on web code editor via WebSocket
     //
-    const websocketUrl = `wss://${location.host}/play`
+    let socketProtocol = "ws"
+    if (location.protocol === "https:")
+      socketProtocol = "wss"
+
+    const websocketUrl = `${socketProtocol}://${location.host}/play`
 
     const ydoc = new Y.Doc()
     const provider = new WebsocketProvider(websocketUrl, 'ws', ydoc)
