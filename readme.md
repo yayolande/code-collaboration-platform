@@ -24,6 +24,7 @@ Second, programmers can do live programming with the integrated web editor
 - [ ] File system or code space eg. give root directory to user so that they can create files and folders themselves as if they where on the own file system (github workspace)
 - [ ] Multi-files code editor similar to [svelte tutorial](https://learn.svelte.dev/tutorial/media-elements). Luckily enough, the [source code](https://github.com/sveltejs/learn.svelte.dev) is available.
 - [ ] Show comment count for a post on the list of post available
+- [ ] Make WebSocket work on render.com by securing the communication with TLS
 
 ## How to contribute
 
